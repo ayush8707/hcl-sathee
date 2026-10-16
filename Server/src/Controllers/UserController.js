@@ -23,7 +23,12 @@ const formatEmailError = (err) => {
     (typeof err?.response?.data?.error === "string" ? err.response.data.error : null);
 
   const raw = oauthError || err?.message || "Failed to send welcome email";
-  if (String(raw).toLowerCase().includes("invalid_grant")) {
+  // Google answers an expired/revoked refresh token with
+  // { error: "invalid_grant", error_description: "Bad Request" }, so check the
+  // error code too, not just the description.
+  const oauthCode =
+    typeof err?.response?.data?.error === "string" ? err.response.data.error : "";
+  if (`${oauthCode} ${raw}`.toLowerCase().includes("invalid_grant")) {
     return "Gmail authorization expired (invalid_grant). Update EMAIL_REFRESH_TOKEN on the server.";
   }
   return raw;
