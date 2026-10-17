@@ -119,43 +119,42 @@ const buildMimeMessage = ({ from, to, subject, text, html }) => {
   return toBase64Url(message);
 };
 
-const BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
+const RESEND_SEND_URL = "https://api.resend.com/emails";
 
-// Brevo transactional API. Used instead of Gmail whenever BREVO_API_KEY is
-// set; the sender comes from EMAIL_FROM (an address verified in Brevo), so
-// moving to a custom domain later is only an env change.
-async function deliverViaBrevo({ to, subject, text, html }) {
-  const from = String(process.env.EMAIL_FROM || process.env.EMAIL_USER || "").trim();
+// Resend transactional API. Used instead of Gmail whenever RESEND_API_KEY is
+// set; EMAIL_FROM must be an address on a domain verified in Resend.
+async function deliverViaResend({ to, subject, text, html }) {
+  const from = String(process.env.EMAIL_FROM || "").trim();
   if (!from) {
     throw new Error("Email is not configured. Missing env: EMAIL_FROM");
   }
+  const fromName = stripLineBreaks(process.env.EMAIL_FROM_NAME || FROM_NAME).replace(/[<>"]/g, "");
 
-  const res = await fetch(BREVO_SEND_URL, {
+  const res = await fetch(RESEND_SEND_URL, {
     method: "POST",
     headers: {
-      "api-key": String(process.env.BREVO_API_KEY).trim(),
+      authorization: `Bearer ${String(process.env.RESEND_API_KEY).trim()}`,
       "content-type": "application/json",
-      accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: process.env.EMAIL_FROM_NAME || FROM_NAME, email: from },
-      to: [{ email: stripLineBreaks(to) }],
+      from: `${fromName} <${stripLineBreaks(from)}>`,
+      to: [stripLineBreaks(to)],
       subject: stripLineBreaks(subject),
-      textContent: text,
-      htmlContent: html,
+      text,
+      html,
     }),
   });
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(`Brevo send failed (${res.status}): ${data.message || res.statusText}`);
+    throw new Error(`Resend send failed (${res.status}): ${data.message || res.statusText}`);
   }
   return data;
 }
 
 async function deliver({ to, subject, text, html }) {
-  if (String(process.env.BREVO_API_KEY || "").trim()) {
-    return deliverViaBrevo({ to, subject, text, html });
+  if (String(process.env.RESEND_API_KEY || "").trim()) {
+    return deliverViaResend({ to, subject, text, html });
   }
 
   const from = String(process.env.EMAIL_USER || "").trim();

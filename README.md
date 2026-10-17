@@ -286,9 +286,9 @@ After that the Admin creates every other account from **Users & Roles**.
 | `EMAIL_CLIENT_ID` | For email | Google OAuth client ID |
 | `EMAIL_CLIENT_SECRET` | For email | Google OAuth client secret |
 | `EMAIL_REFRESH_TOKEN` | For email | OAuth refresh token for `EMAIL_USER` (Gmail send scope) |
-| `BREVO_API_KEY` | Optional | When set, email is sent through Brevo instead of Gmail |
-| `EMAIL_FROM` | With Brevo | Sender address verified in Brevo (e.g. `noreply@yourdomain.in` once a domain is authenticated) |
-| `EMAIL_FROM_NAME` | Optional | Sender display name for Brevo (default *SATHEE Admin*) |
+| `RESEND_API_KEY` | Optional | When set, email is sent through Resend instead of Gmail |
+| `EMAIL_FROM` | With Resend | Sender address on a domain verified in Resend (e.g. `noreply@yourdomain.in`) |
+| `EMAIL_FROM_NAME` | Optional | Sender display name for Resend (default *SATHEE Admin*) |
 | `MAX_CONCURRENT_UPLOADS` | No | Cap on simultaneous file uploads (default 4; extra requests get 503 "server busy") |
 
 Push and email failures are logged but never break the request that triggered them.
