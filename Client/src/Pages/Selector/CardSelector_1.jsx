@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpRight, Globe, X } from "lucide-react";
+import { ArrowUpRight, Globe, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
@@ -22,7 +22,7 @@ function LogoIcon({ src, alt }) {
 // SATHEE web app entry point. Swap for the real URL after deployment/domain.
 const SATHEE_APP_URL = "http://localhost:5174/";
 
-export default function DashboardSelect({ openHCLSathee, userRole, userCentre }) {
+export default function DashboardSelect({ openHCLSathee, onLogout, userRole, userCentre }) {
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
 
   const openSatheeApp = () => {
@@ -77,9 +77,9 @@ export default function DashboardSelect({ openHCLSathee, userRole, userCentre })
 
   const addDashboardCard = {
     id: "add-dashboard",
-    title: "ADD NEW DASHBOARD",
+    title: "Add New Dashboard",
     subtitle: "Create OR add a new custom dashboard",
-    icon: (size) => <ArrowUpRight size={size} />,
+    icon: (size) => <Plus size={size} />,
     buttonText: "Add New Dashboard",
     onClick: () => setModalOpen(true),
     badge: "Custom",
@@ -90,32 +90,39 @@ export default function DashboardSelect({ openHCLSathee, userRole, userCentre })
     : builtInCards;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#94A3B8] text-white">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-        }}
-      />
+    <div className="min-h-screen w-full flex flex-col bg-[#F1F5F9] font-sans text-black">
+      <header className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 border-b border-[#3B82F6]/20 bg-[#5785d0]">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <img
+            src={HCLLogo}
+            alt="HCL Logo"
+            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">
+              HCL SATHEE
+            </p>
+            <p className="text-xs text-[#101011] truncate">Dashboard Selection</p>
+          </div>
+        </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,.16),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,.12),transparent_40%)]" />
+        {onLogout ? (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="bg-[#3B82F6] hover:bg-blue-600 text-white px-3 sm:px-6 py-2 rounded-2xl text-sm font-medium flex items-center gap-2 transition-colors shrink-0"
+          >
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        ) : null}
+      </header>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 lg:px-10 lg:py-14">
-        <p className="inline-flex w-fit rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-black">
-          Dashboard Selection
-        </p>
-
-        <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-          Choose Your
-          <span className="bg-linear-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-            {" "}
-            Platform
-          </span>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+        <h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl">
+          Choose Your Platform
         </h1>
-
-        <p className="mt-3 max-w-2xl text-sm font-bold text-slate-400 sm:text-black">
+        <p className="mt-2 text-slate-600">
           You are logged in successfully. Select where you want to continue.
         </p>
 
@@ -124,13 +131,13 @@ export default function DashboardSelect({ openHCLSathee, userRole, userCentre })
             ({ id, title, subtitle, icon, buttonText, onClick, badge, removable }) => (
               <article
                 key={id}
-                className="group relative rounded-2xl border border-slate-700/70 bg-[#F1F5F9]/90 p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-blue-500/40 hover:shadow-[0_20px_70px_rgba(59,130,246,0.2)] lg:p-7 text-black"
+                className="group relative flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md lg:p-7"
               >
                 {removable ? (
                   <button
                     type="button"
                     onClick={() => handleRemove(id)}
-                    className="absolute right-4 top-4 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    className="absolute right-3 top-3 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
                     title="Remove dashboard"
                   >
                     <X size={16} />
@@ -138,25 +145,37 @@ export default function DashboardSelect({ openHCLSathee, userRole, userCentre })
                 ) : null}
 
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/20">
-                    {icon(24)}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5 text-[#3B82F6]">
+                    {icon(26)}
                   </div>
 
-                  <span className="rounded-full border border-slate-600 bg-slate-800/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                      removable ? "mr-6 " : ""
+                    }${
+                      badge === "Internal"
+                        ? "bg-blue-100 text-blue-700"
+                        : badge === "Custom"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
                     {badge}
                   </span>
                 </div>
 
-                <h2 className="mt-5 text-2xl font-bold tracking-tight">{title}</h2>
+                <h2 className="mt-5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  {title}
+                </h2>
 
-                <p className="mt-2 truncate text-sm leading-relaxed text-black">
+                <p className="mt-1.5 truncate text-sm leading-relaxed text-slate-600">
                   {subtitle}
                 </p>
 
                 <button
                   type="button"
                   onClick={onClick}
-                  className="mt-6 inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/15 px-4 py-2.5 text-sm font-semibold text-black transition hover:border-blue-400/60 hover:bg-blue-500/25"
+                  className="mt-6 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#3B82F6] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
                 >
                   {buttonText}
                   <ArrowUpRight
@@ -168,7 +187,7 @@ export default function DashboardSelect({ openHCLSathee, userRole, userCentre })
             )
           )}
         </div>
-      </div>
+      </main>
 
       {isAdmin ? (
         <AddDashboardModal
