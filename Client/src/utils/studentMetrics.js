@@ -178,6 +178,7 @@ export const getCourseExamProgress = (students = []) => {
       progress: rounded,
       color: getProgressColor(rounded),
       noStudents: false,
+      noMarks: progress == null,
       studentCount: courseStudents.length,
     };
   });

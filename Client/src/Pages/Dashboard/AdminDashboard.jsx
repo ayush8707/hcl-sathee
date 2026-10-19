@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { MainLayout } from "../../Components/MainLayout";
 import { WelcomeBanner } from "../../Components/Dashboard/WelcomeBanner";
@@ -7,9 +8,12 @@ import { AttendanceChart } from "../../Components/Dashboard/AttendanceChart";
 import { StudentsByCourseChart } from "../../Components/Dashboard/StudentsByCourseChart";
 import { QuickActions } from "../../Components/Dashboard/QuickActions";
 import { ExamProgress } from "../../Components/Dashboard/ExamProgress";
+import { StatTiles } from "../../Components/Dashboard/StatTiles";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
-import { matchesPortalCentre } from "../../utils/portalMapping";
+import { fetchLeaveRequests } from "../../services/leaveRequests";
+import { fetchSupportQueries } from "../../services/supportQueries";
+import { getCentreValueFromPortal, matchesPortalCentre } from "../../utils/portalMapping";
 
 export default function AdminDashboard({
   portalName,
@@ -23,12 +27,22 @@ export default function AdminDashboard({
   studentsNavIndex = 4,
   attendanceNavIndex = 1,
   isCustomCentre = false,
+  variant = "admin",
+  usersNavIndex = 3,
+  announcementsNavIndex = 5,
+  queriesNavIndex = 6,
   notificationMessage = "Get notified about Attendance, Leave Requests, and Queries.",
 }) {
   const [students, setStudents] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState("");
   const [todaySummary, setTodaySummary] = useState(null);
+  const [pendingLeaves, setPendingLeaves] = useState(null);
+  const [openQueries, setOpenQueries] = useState(null);
+  const navigate = useNavigate();
+  const isAdmin = variant === "admin";
+  // Attendance summary is served to admins and partners only.
+  const canSeeAttendance = variant !== "mitra";
 
   useEffect(() => {
     let isMounted = true;
@@ -68,18 +82,47 @@ export default function AdminDashboard({
     let isMounted = true;
 
     // Skip data fetching for custom centres
-    if (isCustomCentre) {
+    if (isCustomCentre || !canSeeAttendance) {
       setTodaySummary(null);
       return;
     }
 
-    fetchAttendanceSummary({ period: "daily", centre: portalName })
+    const centre = getCentreValueFromPortal(portalName) || portalName || null;
+    fetchAttendanceSummary({ period: "daily", centre })
       .then((data) => isMounted && setTodaySummary(data))
       .catch(() => isMounted && setTodaySummary(null));
     return () => {
       isMounted = false;
     };
-  }, [portalName, isCustomCentre]);
+  }, [portalName, isCustomCentre, canSeeAttendance]);
+
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let isMounted = true;
+
+    fetchLeaveRequests()
+      .then((leaves) => {
+        if (!isMounted) return;
+        const centreLeaves = isCustomCentre
+          ? []
+          : leaves.filter((leave) => matchesPortalCentre(leave.centre, portalName));
+        setPendingLeaves(
+          centreLeaves.filter((leave) => String(leave.status || "pending").toLowerCase() === "pending").length
+        );
+      })
+      .catch(() => isMounted && setPendingLeaves(null));
+
+    fetchSupportQueries()
+      .then((queries) => {
+        if (!isMounted) return;
+        setOpenQueries(queries.filter((query) => (query.status || "Open") !== "Replied").length);
+      })
+      .catch(() => isMounted && setOpenQueries(null));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin, isCustomCentre, portalName]);
 
   const stats = useMemo(() => {
     const centreStudents = students.filter((student) =>
@@ -105,8 +148,22 @@ export default function AdminDashboard({
 
         <WelcomeBanner portalName={portalName} userName={userName} />
 
+        <StatTiles
+          totalStudents={stats.centreStudents.length}
+          loadingStudents={loadingStats}
+          todayAttendance={canSeeAttendance ? todaySummary : undefined}
+          pendingLeaves={isAdmin ? pendingLeaves : undefined}
+          openQueries={isAdmin ? openQueries : undefined}
+          onStudents={() => onNavChange(studentsNavIndex)}
+          onAttendance={() => onNavChange(attendanceNavIndex)}
+          onLeaves={() => navigate("/leave-requests")}
+          onQueries={() => onNavChange(queriesNavIndex)}
+        />
+
         <QuickActions
           readOnly={readOnly}
+          onAddUser={isAdmin ? () => onNavChange(usersNavIndex) : undefined}
+          onPostAnnouncement={isAdmin ? () => onNavChange(announcementsNavIndex) : undefined}
           portalName={portalName}
           isCustomCentre={isCustomCentre}
           onViewStudents={() => onNavChange(studentsNavIndex)}

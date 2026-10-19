@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Eye } from "lucide-react";
+import { CalendarCheck, CalendarDays, Clock3, GraduationCap, Megaphone, UserPlus } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import Schedule from "../../Pages/Schedule/Schedule";
 import TimeTable from "./TimeTable";
@@ -7,6 +7,8 @@ import TimeTable from "./TimeTable";
 export function QuickActions({
   onViewStudents,
   onViewAttendance,
+  onAddUser,
+  onPostAnnouncement,
   readOnly = false,
   portalName = "",
   isCustomCentre = false,
@@ -16,51 +18,60 @@ export function QuickActions({
 
   const quickActions = [
     {
-      icon: readOnly ? Eye : Plus,
+      icon: GraduationCap,
       label: readOnly ? "View Students" : "Add Students",
-      color: "text-blue-400",
-      bg: "hover:bg-blue-500/10 hover:border-blue-500/30",
+      tone: "bg-blue-100 text-blue-600",
       onClick: onViewStudents,
     },
     {
-      icon: Eye,
+      icon: CalendarCheck,
       label: "View Attendance",
-      color: "text-emerald-400",
-      bg: "hover:bg-emerald-500/10 hover:border-emerald-500/30",
+      tone: "bg-emerald-100 text-emerald-600",
       onClick: onViewAttendance,
     },
     {
-      icon: Eye,
+      icon: CalendarDays,
       label: "View Timetable",
-      color: "text-violet-400",
-      bg: "hover:bg-violet-500/10 hover:border-violet-500/30",
+      tone: "bg-violet-100 text-violet-600",
       onClick: () => setIsTimetableOpen(true),
     },
     {
-      icon: Eye,
+      icon: Clock3,
       label: "View Schedule",
-      color: "text-pink-400",
-      bg: "hover:bg-pink-500/10 hover:border-pink-500/30",
+      tone: "bg-pink-100 text-pink-600",
       onClick: () => setIsScheduleOpen(true),
     },
-  ];
+    onAddUser && {
+      icon: UserPlus,
+      label: "Add User",
+      tone: "bg-amber-100 text-amber-600",
+      onClick: onAddUser,
+    },
+    onPostAnnouncement && {
+      icon: Megaphone,
+      label: "Post Announcement",
+      tone: "bg-sky-100 text-sky-600",
+      onClick: onPostAnnouncement,
+    },
+  ].filter(Boolean);
 
   return (
     <>
-      <div className="bg-[#ccd2dd] border border-[#3B82F6]/20 rounded-3xl px-6 py-5 w-fit mx-auto">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <SectionHeader title="Quick Actions" />
 
-        <div className="grid grid-cols-4 gap-3 mt-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {quickActions.map((action) => (
             <button
               key={action.label}
+              type="button"
               onClick={action.onClick}
-              className={`w-25 h-25 flex flex-col items-center justify-center gap-3 rounded-2xl border border-[#040b15] bg-[#82adea] hover:border-[#3B82F6]/40 transition-all duration-200 group ${action.bg}`}
+              className="group flex min-w-0 flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-4 transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-md"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#0F172A] group-hover:scale-110 transition-transform">
-                <action.icon size={20} className={action.color} />
+              <div className={`flex h-11 w-11 items-center justify-center rounded-xl transition-transform group-hover:scale-110 ${action.tone}`}>
+                <action.icon size={22} />
               </div>
-              <span className="text-sm font-medium text-black text-center leading-tight">
+              <span className="text-center text-sm font-medium leading-tight text-slate-800">
                 {action.label}
               </span>
             </button>

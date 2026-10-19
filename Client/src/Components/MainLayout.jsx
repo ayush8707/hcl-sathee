@@ -24,12 +24,12 @@ function NavButtons({
       }}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-base transition-all ${
         activeNav === i
-          ? "bg-black text-white font-semibold"
+          ? "bg-[#3B82F6] text-white font-semibold shadow-sm"
           : "hover:bg-[#fbfcfd] text-[#423333]"
       }`}
     >
       <item.icon size={20} className="shrink-0" />
-      {!collapsed && <span>{item.label}</span>}
+      {!collapsed && <span className="text-left">{item.label}</span>}
     </button>
   ));
 }

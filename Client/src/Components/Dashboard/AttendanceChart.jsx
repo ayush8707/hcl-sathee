@@ -60,10 +60,10 @@ export function AttendanceChart({ portalName, isCustomCentre = false }) {
     : [];
 
   return (
-    <div className="bg-[#ccd2dd] border border-black rounded-3xl p-6 h-[420px] flex flex-col overflow-hidden">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-[420px] flex flex-col overflow-hidden">
       <SectionHeader title="Average Attendance - Centre" />
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {periodOptions.map((option) => (
           <button
             key={option.key}
@@ -71,8 +71,8 @@ export function AttendanceChart({ portalName, isCustomCentre = false }) {
             onClick={() => setSelectedPeriod(option.key)}
             className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
               selectedPeriod === option.key
-                ? "border-blue-500/60 bg-blue-500/15 text-blue-700"
-                : "border-[#334155] bg-[#ccd2dd] text-black hover:border-[#3B82F6]/40"
+                ? "border-[#3B82F6] bg-[#3B82F6] text-white"
+                : "border-slate-200 bg-white text-slate-700 hover:border-blue-300"
             }`}
           >
             {option.label}
@@ -80,13 +80,24 @@ export function AttendanceChart({ portalName, isCustomCentre = false }) {
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[#3B82F6]/20 bg-[#b6caf1] p-6 flex-1 flex items-center gap-6">
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 flex-1 flex items-center gap-6">
         {loading ? (
           <p className="w-full text-center text-sm text-slate-600">Loading…</p>
         ) : error ? (
           <p className="w-full text-center text-sm text-red-600">{error}</p>
         ) : !summary || summary.totalStudents === 0 ? (
-          <p className="w-full text-center text-sm text-slate-600">No students to show yet.</p>
+          <p className="w-full text-center text-sm text-slate-500">No students to show yet.</p>
+        ) : (Number(summary.presentCount) || 0) === 0 ? (
+          <div className="w-full text-center">
+            <p className="text-sm font-medium text-slate-700">
+              {selectedPeriod === "daily"
+                ? "Attendance not marked today"
+                : `No attendance marked this ${selectedPeriod === "weekly" ? "week" : "month"}`}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {summary.totalStudents} student{summary.totalStudents === 1 ? "" : "s"} in this centre
+            </p>
+          </div>
         ) : (
           <>
             <div className="h-40 w-40 shrink-0">
@@ -112,11 +123,14 @@ export function AttendanceChart({ portalName, isCustomCentre = false }) {
               </ResponsiveContainer>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-black">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {selectedPeriod} attendance
               </p>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-black">
+              <p className="mt-2 text-4xl font-bold tracking-tight text-slate-900">
                 {Number(summary.percentage) || 0}%
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {summary.presentCount} of {summary.totalStudents} present
               </p>
             </div>
           </>

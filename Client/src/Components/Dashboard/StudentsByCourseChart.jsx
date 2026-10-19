@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from "recharts";
 
 const COURSES = ["JEE", "NEET", "SSC", "CLAT", "IBPS", "ICAR", "CUET", "RRB"];
@@ -45,9 +45,9 @@ export function StudentsByCourseChart({ students = [], loading = false }) {
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 h-[400px] flex flex-col">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-[400px] flex flex-col">
       <div>
-        <p className="text-sm font-semibold text-slate-900">Students by Course</p>
+        <p className="text-lg font-semibold text-slate-900">Students by Course</p>
         <p className="text-xs text-slate-500">
           Total {total.toLocaleString("en-IN")} students &middot; hover a bar to see names
         </p>
@@ -60,15 +60,16 @@ export function StudentsByCourseChart({ students = [], loading = false }) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 20, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-              <XAxis dataKey="course" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="course" interval={0} tick={{ fontSize: 10, fill: "#64748B" }} axisLine={false} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "#EFF6FF" }} />
               <Bar dataKey="count" radius={[6, 6, 0, 0]} animationDuration={800} animationEasing="ease-out">
                 {data.map((entry) => (
                   <Cell key={entry.course} fill={BAR_COLOR} />
                 ))}
+                <LabelList dataKey="count" position="top" style={{ fontSize: 12, fontWeight: 600, fill: "#334155" }} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

@@ -4,6 +4,7 @@ export default function HCLPartnerDashboard(props) {
   return (
     <AdminDashboard
       {...props}
+      variant="partner"
       readOnly
       roleLabel="Partner Portal"
       studentsNavIndex={3}

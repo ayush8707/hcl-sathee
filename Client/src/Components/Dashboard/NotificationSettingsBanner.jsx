@@ -1,25 +1,29 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, BellOff, X } from "lucide-react";
 import { subscribeToPush, unsubscribeFromPush } from "../../utils/webPush";
 import { registerPushSubscription, unregisterPushSubscription } from "../../services/notifications";
 
 const PREF_KEY = "sathee_notifications_pref";
+const DISMISS_KEY = "sathee_notifications_banner_hidden";
 
-const readStoredPref = () => {
+const readStoredValue = (key) => {
   try {
-    return localStorage.getItem(PREF_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
 };
 
-const writeStoredPref = (value) => {
+const writeStoredValue = (key, value) => {
   try {
-    localStorage.setItem(PREF_KEY, value);
+    localStorage.setItem(key, value);
   } catch {
     // ignore storage errors
   }
 };
+
+const readStoredPref = () => readStoredValue(PREF_KEY);
+const writeStoredPref = (value) => writeStoredValue(PREF_KEY, value);
 
 export function NotificationSettingsBanner({
   message = "Get notified about announcements, leave requests, and query replies.",
@@ -32,6 +36,14 @@ export function NotificationSettingsBanner({
   });
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null);
+  const [hidden, setHidden] = useState(() => {
+    if (readStoredValue(DISMISS_KEY) === "yes") return true;
+    try {
+      return sessionStorage.getItem(DISMISS_KEY) === "yes";
+    } catch {
+      return false;
+    }
+  });
 
   // Keep the server-side subscription fresh on every visit, unless the user
   // has explicitly opted out.
@@ -44,7 +56,7 @@ export function NotificationSettingsBanner({
     }
   }, []);
 
-  const handleSave = async () => {
+  const setNotifications = async (turnOn) => {
     setSaving(true);
     setStatus(null);
 
@@ -54,17 +66,18 @@ export function NotificationSettingsBanner({
       return;
     }
 
-    if (enabled) {
+    if (turnOn) {
       try {
         const subscription = await subscribeToPush();
         if (subscription) {
           await registerPushSubscription(subscription);
           writeStoredPref("yes");
-          setStatus({ type: "success", text: "Notifications enabled." });
+          setEnabled(true);
+          setStatus({ type: "success", text: "Notifications are on." });
         } else if (Notification.permission === "denied") {
           setStatus({
             type: "error",
-            text: "Your browser is blocking notifications for this site. Allow notifications in your browser's site settings, then click Save again.",
+            text: "Your browser is blocking notifications for this site. Allow notifications in your browser's site settings, then try again.",
           });
         } else {
           setStatus({ type: "error", text: "Couldn't enable notifications. Please try again." });
@@ -78,55 +91,80 @@ export function NotificationSettingsBanner({
         if (subscription) await unregisterPushSubscription(subscription);
       } finally {
         writeStoredPref("no");
-        setStatus({ type: "success", text: "Notifications disabled." });
+        setEnabled(false);
+        setStatus({ type: "success", text: "Notifications are off." });
       }
     }
 
     setSaving(false);
   };
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-blue-900 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-3">
-        <Bell size={18} className="mt-0.5 shrink-0" />
-        <p className="text-sm">{message}</p>
-      </div>
+  // With notifications on there is nothing left to do, so hide for good;
+  // otherwise hide until the next login so the option is not lost.
+  const hide = () => {
+    if (enabled) {
+      writeStoredValue(DISMISS_KEY, "yes");
+    } else {
+      try {
+        sessionStorage.setItem(DISMISS_KEY, "yes");
+      } catch {
+        // ignore storage errors
+      }
+    }
+    setHidden(true);
+  };
 
-      <div className="flex items-center gap-3">
-        <div className="flex overflow-hidden rounded-md border border-blue-300 text-sm font-medium">
-          <button
-            type="button"
-            onClick={() => setEnabled(true)}
-            className={`px-3 py-1.5 transition-colors ${
-              enabled ? "bg-blue-600 text-white" : "bg-white text-blue-700 hover:bg-blue-100"
-            }`}
-          >
-            Yes
-          </button>
-          <button
-            type="button"
-            onClick={() => setEnabled(false)}
-            className={`px-3 py-1.5 transition-colors ${
-              !enabled ? "bg-blue-600 text-white" : "bg-white text-blue-700 hover:bg-blue-100"
-            }`}
-          >
-            No
-          </button>
+  if (hidden) return null;
+
+  return (
+    <div className="relative rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 pr-12 text-blue-900">
+      <button
+        type="button"
+        onClick={hide}
+        className="absolute right-3 top-3 rounded-full p-1 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
+        aria-label="Hide this message"
+        title="Hide"
+      >
+        <X size={16} />
+      </button>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          {enabled ? (
+            <Bell size={18} className="mt-0.5 shrink-0" />
+          ) : (
+            <BellOff size={18} className="mt-0.5 shrink-0" />
+          )}
+          <p className="text-sm">
+            {enabled ? "Notifications are on. " : ""}
+            {message}
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
+        {enabled ? (
+          <button
+            type="button"
+            onClick={() => setNotifications(false)}
+            disabled={saving}
+            className="shrink-0 rounded-xl border border-blue-300 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+          >
+            {saving ? "Please wait..." : "Turn off"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setNotifications(true)}
+            disabled={saving}
+            className="shrink-0 rounded-xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-60"
+          >
+            {saving ? "Please wait..." : "Turn on notifications"}
+          </button>
+        )}
       </div>
 
       {status && (
         <p
-          className={`w-full text-xs ${
+          className={`mt-2 text-xs ${
             status.type === "error" ? "text-red-700" : "text-emerald-700"
           }`}
         >
