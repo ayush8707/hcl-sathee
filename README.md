@@ -242,7 +242,7 @@ values ('Your Name', 'you@example.com', '9876543210', 'ADMIN', 'HCL RAJASTHAN');
 
 Then give that account a password with either route:
 
-- **Forgot-password flow** (needs Gmail configured): on the login page choose *Forgot password*, enter the email, enter the 6-digit code, set a password. Login later requires the **exact name** stored in the row.
+- **Forgot-password flow** (needs Gmail configured): on the login page choose *Forgot password*, enter the email, enter the 6-digit code, set a password.
 - **Manual hash:** generate a bcrypt hash and set it directly:
   ```bash
   node -e "require('bcryptjs').hash('Str0ng!Passw0rd',12).then(console.log)"
@@ -353,7 +353,7 @@ If a Storage upload fails, announcement attachments (≤ 600 KB) and Mitra photo
 
 ## 8. Authentication and security
 
-**Login.** `POST /api/auth/login` takes **full name, email and password**; the name must match the account exactly. Passwords are bcrypt hashes (12 rounds). On success the server returns a **JWT valid for 1 day** carrying `id, email, role, centre`. The client keeps the token and session in `sessionStorage`, so closing the tab signs the user out. Any `401` from the API clears the session and returns to the login page. "Remember me" stores name, email and a base64-encoded password in `localStorage` (obfuscation only, not encryption).
+**Login.** `POST /api/auth/login` takes **email and password**. Passwords are bcrypt hashes (12 rounds). On success the server returns a **JWT valid for 1 day** carrying `id, email, role, centre`. The client keeps the token and session in `sessionStorage`, so closing the tab signs the user out. Any `401` from the API clears the session and returns to the login page. "Remember my email" stores only the email address in `localStorage`; passwords are never stored by the app (the form allows the browser's own password manager to save them).
 
 **Invite flow.** Admin creates a user, the server emails a link `CLIENT_URL/create-password?token=…` (a 24-hour JWT with the user's name, email and role). The user sets a password on that page. The link works only while the account still has no password; **Resend invite** issues a fresh link. For `@example.com` test addresses the email is skipped and the link is returned to the Admin instead. If Gmail sending fails, the UI shows the error and a copyable setup link.
 
@@ -430,7 +430,7 @@ Admin sidebar: **Dashboard, Attendance Record, Progress and Analytics, Users & R
 
 ### 10.1 Signing in and choosing where to work
 
-- **Login** with name, email and password. Cold servers may take up to ~90 s; the login screen retries automatically and shows "Waking up server…".
+- **Login** with email and password. Cold servers may take up to ~90 s; the login screen retries automatically and shows "Waking up server…".
 - **Home selector (`/`)** shows the internal *HCL SATHEE* card plus an external *SATHEE* card (see [Known limitations](#18-known-limitations)). Admins also see any **custom dashboards** they have added: an "ADD NEW DASHBOARD" card takes a name and an http(s) URL and stores it in the browser's `localStorage` only (no backend call). A custom card opens its URL in a new tab; its ✕ removes it immediately.
 - **State portal selector (`/portals`)** lists the three default centres plus custom ones, each with its Kendra ID.
   - **Add a centre:** "ADD NEW CENTRE" → enter a name; the server normalises it (e.g. `HCL UTTAR PRADESH`) and rejects blanks and near-duplicates.
@@ -660,7 +660,7 @@ Base URL = `VITE_API_URL`. All routes except `/` and `/api/auth/*` require `Auth
 |---|---|---|---|
 | GET | `/` | public | Health check |
 | **Auth** | | | |
-| POST | `/api/auth/login` | public (8/min) | `{name, email, password}` → `{token, user}` |
+| POST | `/api/auth/login` | public (8/min) | `{email, password}` → `{token, user}` (`user.lastLoginAt` is the previous login) |
 | POST | `/api/auth/create-password` | public | `{token, password}` from invite link |
 | POST | `/api/auth/forgot-password/request-otp` | public (8/min) | `{email}` |
 | POST | `/api/auth/forgot-password/verify-otp` | public (8/min) | `{email, otp}` → `{resetToken}` |
@@ -808,7 +808,7 @@ These are accurate to the current code and are good candidates for follow-up wor
 | Login says "Server is waking up" | Render free instance is starting; wait up to ~90 s or use a paid plan |
 | `Supabase Connection Failed` on boot | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` missing or wrong |
 | `permission denied for table …` from Supabase | The grants block in `schema.sql` was not run; re-run the script |
-| "Invalid credentials" though the password is right | Login also requires the **exact name** on the account |
+| "Invalid credentials" though the password is right | Check the email for typos, or reset the password with *Forgot password* |
 | Invite email not received | Check the recipient's **Spam** folder first. Otherwise Gmail OAuth is not configured or returned `invalid_grant`: use the setup link shown in the Add User result and regenerate `EMAIL_REFRESH_TOKEN` |
 | Invite link "expired" | Links last 24 h; use **Resend invite** |
 | Push toggle says notifications are not configured/enabled | `VITE_VAPID_PUBLIC_KEY` missing in the client build (redeploy after adding), or the browser blocked notifications |

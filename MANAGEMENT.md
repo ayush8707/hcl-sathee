@@ -31,8 +31,8 @@ Role shorthand: **A** = Admin, **P** = HCL Partner, **M** = Sathee Mitra (includ
 
 | Control | What it does | Backend call |
 |---|---|---|
-| **Sign in** | Logs in with full name, email and password. Retries automatically while a sleeping server wakes up ("Waking up server…") | `POST /api/auth/login` |
-| **Remember me** | Saves name, email and password in this browser so the form is prefilled next time | none (browser storage) |
+| **Sign in** | Logs in with email and password. Retries automatically while a sleeping server wakes up ("Waking up server…") | `POST /api/auth/login` |
+| **Remember my email** | Saves only the email address in this browser so it is prefilled next time; the password is never saved by the app | none (browser storage) |
 | **Forgot password** link | Opens the 3-step reset flow | none |
 | **Send code** (step 1) | Emails a 6-digit code (valid 10 minutes) | `POST /api/auth/forgot-password/request-otp` |
 | **Verify** (step 2) | Checks the code (5 attempts max) and unlocks the reset step | `…/verify-otp` |
