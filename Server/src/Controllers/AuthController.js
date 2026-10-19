@@ -13,6 +13,9 @@ const {
 const fail = (res, status, message) =>
   res.status(status).json({ success: false, message });
 
+const normalizeName = (value) =>
+  String(value || "").trim().replace(/\s+/g, " ").toLowerCase();
+
 const ok = (res, payload) => res.status(200).json({ success: true, ...payload });
 
 const serverError = (res, err) => {
@@ -224,7 +227,9 @@ exports.login = async (req, res) => {
     const user = await User.findByEmail(email);
     if (!user) return fail(res, 401, "Invalid credentials");
 
-    if (user.name?.trim() !== name) {
+    // Names are matched without regard to letter case or repeated spaces, so
+    // "AYUSH GUPTA" and "Ayush  Gupta" both match "Ayush Gupta".
+    if (normalizeName(user.name) !== normalizeName(name)) {
       return fail(res, 401, "Invalid credentials");
     }
 
