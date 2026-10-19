@@ -24,6 +24,7 @@ export const getSession = () => {
       centre: session.centre ?? null,
       portal: session.portal || "",
       isCustomCentre: Boolean(session.isCustomCentre),
+      lastLoginAt: session.lastLoginAt,
     };
   } catch {
     return null;
@@ -46,6 +47,8 @@ export const setSession = (session) => {
         centre: session.centre ?? null,
         portal: session.portal || "",
         isCustomCentre: Boolean(session.isCustomCentre),
+        // null = first login; undefined = server did not report it.
+        lastLoginAt: session.lastLoginAt,
       })
     );
   } catch {
@@ -69,8 +72,6 @@ export const updateSession = (patch) => {
 export const clearSession = () => {
   try {
     sessionStorage.removeItem(SESSION_KEY);
-    // Lets the dashboard record the next login as a new visit.
-    sessionStorage.removeItem("sathee_prev_login");
     localStorage.removeItem(SESSION_KEY);
   } catch {
     // ignore

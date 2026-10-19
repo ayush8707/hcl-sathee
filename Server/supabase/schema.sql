@@ -43,9 +43,12 @@ create table if not exists users (
   otp_hash           text,
   otp_expires_at     timestamptz,
   otp_attempts       integer not null default 0,
+  last_login_at      timestamptz,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
+-- Added after the first release; safe to re-run on an existing database.
+alter table users add column if not exists last_login_at timestamptz;
 create index if not exists idx_users_centre on users (centre);
 create index if not exists idx_users_role on users (role);
 

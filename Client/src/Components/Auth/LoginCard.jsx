@@ -164,6 +164,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
         email: user.email || email,
         role: user.role || "",
         centre: user.centre || null,
+        lastLoginAt: user.lastLoginAt,
       };
       setSession({ ...sessionUser, portal: "" });
       onLoginSuccess?.(sessionUser);

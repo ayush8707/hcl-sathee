@@ -1,53 +1,22 @@
-import { useState } from "react";
 import { Clock } from "lucide-react";
+import { getSession } from "../../utils/authSession";
 
-const LAST_LOGIN_KEY = "sathee_last_login";
-const SESSION_PREV_KEY = "sathee_prev_login";
-
-const safeGet = (storage, key) => {
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-
-const safeSet = (storage, key, value) => {
-  try {
-    storage.setItem(key, value);
-  } catch {
-    // ignore storage errors
-  }
-};
-
-// The server does not track logins, so the previous visit is remembered per
-// browser: once per session, the stored time moves into the session as
-// "previous login" and the current time becomes the new stored value.
-const readPreviousLogin = (userName) => {
-  if (typeof window === "undefined") return null;
-  const key = `${LAST_LOGIN_KEY}:${String(userName || "").trim().toLowerCase()}`;
-  const recorded = safeGet(window.sessionStorage, SESSION_PREV_KEY);
-  if (recorded !== null) return recorded || null;
-
-  const previous = safeGet(window.localStorage, key) || "";
-  safeSet(window.sessionStorage, SESSION_PREV_KEY, previous);
-  safeSet(window.localStorage, key, new Date().toISOString());
-  return previous || null;
-};
+const formatLogin = (value) =>
+  new Date(value).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 
 export function WelcomeBanner({ portalName, userName }) {
-  const [previousLogin] = useState(() => readPreviousLogin(userName));
-
-  const formattedLastLogin = previousLogin
-    ? new Date(previousLogin).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : "First login on this device";
+  // Set by the server at login: an ISO time, null on the first login, or
+  // undefined when the server could not report it (line hidden).
+  const lastLoginAt = getSession()?.lastLoginAt;
+  const formattedLastLogin =
+    lastLoginAt === undefined ? null : lastLoginAt ? formatLogin(lastLoginAt) : "This is your first login";
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -68,10 +37,12 @@ export function WelcomeBanner({ portalName, userName }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <div className="flex items-center gap-2 text-slate-600">
-            <Clock size={16} />
-            <span>Last login: {formattedLastLogin}</span>
-          </div>
+          {formattedLastLogin ? (
+            <div className="flex items-center gap-2 text-slate-600">
+              <Clock size={16} />
+              <span>Last login: {formattedLastLogin}</span>
+            </div>
+          ) : null}
 
           <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
             <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />

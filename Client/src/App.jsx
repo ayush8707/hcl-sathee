@@ -371,6 +371,7 @@ const AppContent = () => {
             centre,
             portal: "",
             isCustomCentre: false,
+            lastLoginAt: typeof user === "object" ? user?.lastLoginAt : undefined,
           });
           setIsLoggedIn(true);
         }}

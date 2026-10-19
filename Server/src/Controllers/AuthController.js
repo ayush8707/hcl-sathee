@@ -235,6 +235,16 @@ exports.login = async (req, res) => {
       await User.update(user.id, { password: await hashPassword(password) });
     }
 
+    // The previous login is shown on the dashboard; a failure here (e.g. the
+    // last_login_at column not created yet) must never block signing in.
+    let lastLoginAt;
+    try {
+      await User.recordLogin(user.id);
+      lastLoginAt = user.lastLoginAt ? user.lastLoginAt.toISOString() : null;
+    } catch (err) {
+      console.error("Record login failed:", err.message);
+    }
+
     return ok(res, {
       message: "Login Successful",
       token: generateToken(user),
@@ -244,6 +254,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         centre: user.centre,
+        lastLoginAt,
       },
     });
   } catch (err) {

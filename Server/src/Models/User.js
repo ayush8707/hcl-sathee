@@ -52,6 +52,7 @@ const toApiUser = (row) => {
     centre: row.centre ?? null,
     pushSubscriptions: Array.isArray(row.push_subscriptions) ? row.push_subscriptions : [],
     availableDays: normalizeAvailableDays(row.available_days),
+    lastLoginAt: toDate(row.last_login_at),
     created_at: toDate(row.created_at),
     updated_at: toDate(row.updated_at),
   };
@@ -138,6 +139,15 @@ const create = async (data) => {
   }
 
   return toApiUser(row);
+};
+
+/** Stamps the current time as the user's latest login. */
+const recordLogin = async (id) => {
+  const { error } = await getSupabase()
+    .from(TABLE)
+    .update({ last_login_at: new Date().toISOString() })
+    .eq("id", id);
+  assertNoError(error, "Failed to record login");
 };
 
 const update = async (id, data) => {
@@ -313,6 +323,7 @@ module.exports = {
   findByPhone,
   create,
   update,
+  recordLogin,
   destroy,
   addPushSubscription,
   removePushSubscription,
