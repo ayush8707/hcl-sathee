@@ -220,25 +220,26 @@ exports.login = async (req, res) => {
       return fail(res, 400, "Email and password are required");
     }
 
+    const startedAt = Date.now();
     const user = await User.findByEmail(email);
+    const lookupMs = Date.now() - startedAt;
     if (!user) return fail(res, 401, "Invalid credentials");
 
     const { valid, needsRehash } = await verifyPassword(password, user.password);
+    const passwordMs = Date.now() - startedAt - lookupMs;
+    // Shows in the Render logs; helps tell a slow database from a slow server.
+    console.log(`Login timing: user lookup ${lookupMs} ms, password check ${passwordMs} ms`);
     if (!valid) return fail(res, 401, "Invalid credentials");
 
     if (needsRehash) {
       await User.update(user.id, { password: await hashPassword(password) });
     }
 
-    // The previous login is shown on the dashboard; a failure here (e.g. the
-    // last_login_at column not created yet) must never block signing in.
-    let lastLoginAt;
-    try {
-      await User.recordLogin(user.id);
-      lastLoginAt = user.lastLoginAt ? user.lastLoginAt.toISOString() : null;
-    } catch (err) {
-      console.error("Record login failed:", err.message);
-    }
+    // The previous login is shown on the dashboard. Recording this one runs
+    // in the background so signing in does not wait for it, and a failure
+    // (e.g. the last_login_at column not created yet) never blocks a login.
+    const lastLoginAt = user.lastLoginAt ? user.lastLoginAt.toISOString() : null;
+    User.recordLogin(user.id).catch((err) => console.error("Record login failed:", err.message));
 
     return ok(res, {
       message: "Login Successful",
