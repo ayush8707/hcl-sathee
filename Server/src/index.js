@@ -19,6 +19,7 @@ const leaveRequestRoutes = require("./Routes/LeaveRequestRoutes");
 const supportQueryRoutes = require("./Routes/SupportQueryRoutes");
 const testMarksRoutes = require("./Routes/TestMarksRoutes");
 const vishistAttendanceRoutes = require("./Routes/VishistAttendanceRoutes");
+const siteNoticeRoutes = require("./Routes/SiteNoticeRoutes");
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.use("/api/timetables", timetableRoutes);
 app.use("/api/leave-requests", leaveRequestRoutes);
 app.use("/api/support-queries", supportQueryRoutes);
 app.use("/api/test-marks", testMarksRoutes);
+app.use("/api/site-notice", siteNoticeRoutes);
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);

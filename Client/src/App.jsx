@@ -5,6 +5,7 @@ import { LayoutDashboard, CalendarDays, TrendingUp, Users, IdCard, Megaphone, Us
 import Authentication from "./Pages/Auth/Authentication";
 import CreatePassword from "./Components/Auth/CreatePassword";
 import ForgetPassword from "./Components/Auth/ForgetPassword";
+import LegalPage from "./Pages/Legal/LegalPage";
 import CardSelector_1 from "./Pages/Selector/CardSelector_1";
 import CardSelector_2 from "./Pages/Selector/CardSelector_2";
 import OtherCentres from "./Pages/Selector/OtherCentres";
@@ -346,6 +347,11 @@ const AppContent = () => {
 
   if (location.pathname === "/forgot-password") {
     return <ForgetPassword />;
+  }
+
+  // Public pages, linked from the login page footer.
+  if (location.pathname === "/privacy" || location.pathname === "/terms") {
+    return <LegalPage page={location.pathname.slice(1)} />;
   }
 
   if (!isLoggedIn) {

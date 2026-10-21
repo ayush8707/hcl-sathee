@@ -4,6 +4,7 @@ import NewAnnouncementModal from "../../Components/Announcements/NewAnnouncement
 import AnnouncementFilters from "../../Components/Announcements/AnnouncementFilters";
 import { ConfirmDeleteModal, ViewModal } from "../../Components/Announcements/AnnouncementModals";
 import { MainLayout } from "../../Components/MainLayout";
+import LoginNoticeEditor from "../../Components/Announcements/LoginNoticeEditor";
 import {
   createAnnouncement,
   fetchAnnouncements,
@@ -233,6 +234,8 @@ export default function AdminAnnouncements({
               {error}
             </div>
           )}
+
+          {!readOnly ? <LoginNoticeEditor /> : null}
 
           <AnnouncementFilters
             search={search}
