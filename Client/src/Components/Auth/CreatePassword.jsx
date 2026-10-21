@@ -99,7 +99,7 @@ export default function CreatePassword() {
   return (
     <AuthCard
       title="Create Your Password"
-      subtitle="Set a password for your HCL SATHEE portal account."
+            subtitle="Set a password for your SATHEE portal account."
     >
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <Field label="Name">
