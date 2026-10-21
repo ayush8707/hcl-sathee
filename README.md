@@ -661,6 +661,8 @@ Base URL = `VITE_API_URL`. All routes except `/` and `/api/auth/*` require `Auth
 | GET | `/` | public | Health check |
 | **Auth** | | | |
 | POST | `/api/auth/login` | public (8/min) | `{email, password}` → `{token, user}` (`user.lastLoginAt` is the previous login) |
+| GET | `/api/site-notice` | public | → `{notice}` (login page notice, or null) |
+| PUT | `/api/site-notice` | admin | `{message, level: "info"|"warning"}`; empty message removes it |
 | POST | `/api/auth/create-password` | public | `{token, password}` from invite link |
 | POST | `/api/auth/forgot-password/request-otp` | public (8/min) | `{email}` |
 | POST | `/api/auth/forgot-password/verify-otp` | public (8/min) | `{email, otp}` → `{resetToken}` |

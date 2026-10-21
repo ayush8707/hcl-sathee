@@ -391,3 +391,11 @@ alter default privileges in schema public
 --   server only — Row Level Security is intentionally left OFF (the service
 --   role bypasses RLS regardless, but if you ever expose these tables to
 --   anon/client-side queries, enable RLS and write policies before doing so).
+
+-- ---------------------------------------------------------------- site_settings
+-- Small key/value store; "login_notice" holds the notice shown on the login page.
+create table if not exists site_settings (
+  key        text primary key,
+  value      jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);

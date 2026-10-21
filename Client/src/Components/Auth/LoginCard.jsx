@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff, ArrowRight, ArrowBigUp } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { API_URL } from "../../config/api";
+import { HELP_EMAIL } from "../../config/contact";
 import { getAuthErrorMessage, postWithColdStartRetry } from "../../utils/apiRequest";
 import { setAuthToken } from "../../utils/authToken";
 import { setSession } from "../../utils/authSession";
+import { useLoginLanguage } from "../../i18n/LoginLanguage";
+import { SERVER_MESSAGE_KEYS } from "../../i18n/loginStrings";
 
 const REMEMBER_ME_KEY = "hcl_sathee_remember_me";
-const HELP_EMAIL = "satheeayush8707@gmail.com";
 const fieldClass =
   "h-12 w-full rounded-2xl bg-white/10 px-5 outline-none placeholder:text-white/50 focus:bg-white/20";
 
@@ -49,6 +51,7 @@ const forgetRemembered = () => {
 export default function AdminLoginCard({ onLoginSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLoginLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -104,17 +107,17 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     const password = formData.password;
 
     if (!email) {
-      setError("Email address is required.");
+      setError(t.emailRequired);
       focusField("login-email");
       return;
     }
     if (!isValidEmail(email)) {
-      setError("Enter a valid email address.");
+      setError(t.emailInvalid);
       focusField("login-email");
       return;
     }
     if (!password) {
-      setError("Password is required.");
+      setError(t.passwordRequired);
       focusField("login-password");
       return;
     }
@@ -128,9 +131,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
         {
           onStatus: (status) =>
             setStatusText(
-              status === "waking"
-                ? "Waking up server, please wait…"
-                : "Signing in…"
+              status === "waking" ? t.waking : t.signingIn
             ),
         }
       );
@@ -155,7 +156,8 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     } catch (err) {
       console.error(err.response?.data || err);
       setStatusText("");
-      setError(getAuthErrorMessage(err, "Login failed"));
+      const message = getAuthErrorMessage(err, t.loginFailed);
+      setError(t[SERVER_MESSAGE_KEYS[message]] || message);
     } finally {
       setLoading(false);
     }
@@ -169,8 +171,8 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     const password = formData.password;
 
     if (currentKey === "email") {
-      if (!email) return setError("Email address is required.");
-      if (!isValidEmail(email)) return setError("Enter a valid email address.");
+      if (!email) return setError(t.emailRequired);
+      if (!isValidEmail(email)) return setError(t.emailInvalid);
       setError("");
       focusField("login-password");
       return;
@@ -179,7 +181,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     if (currentKey === "password") {
       if (!email || !password) {
         if (!email) return focusField("login-email");
-        return setError("Password is required.");
+        return setError(t.passwordRequired);
       }
       handleLogin(e);
     }
@@ -187,24 +189,22 @@ export default function AdminLoginCard({ onLoginSuccess }) {
 
   if (!hydrated) {
     return (
-      <div className="max-w-md rounded-3xl bg-[#1e40af] p-8 shadow-2xl lg:max-w-lg lg:p-10 text-white">
-        <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-        <p className="text-sm opacity-90">Loading saved login…</p>
+      <div className="w-full max-w-md rounded-3xl bg-[#1e40af] p-8 shadow-2xl lg:max-w-lg lg:p-10 text-white">
+        <h2 className="text-3xl font-bold mb-2">{t.welcome}</h2>
+        <p className="text-sm opacity-90">{t.loadingSaved}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md rounded-3xl bg-[#1e40af] p-8 shadow-2xl lg:max-w-lg lg:p-10 text-white">
-      <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-      <p className="text-sm opacity-90 mb-8">
-        Sign in to access your SATHEE account.
-      </p>
+    <div className="w-full max-w-md rounded-3xl bg-[#1e40af] p-8 shadow-2xl lg:max-w-lg lg:p-10 text-white">
+      <h2 className="text-3xl font-bold mb-2">{t.welcome}</h2>
+      <p className="text-sm opacity-90 mb-8">{t.subtitle}</p>
 
       <form className="space-y-6" onSubmit={handleLogin}>
         <div>
           <label htmlFor="login-email" className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
-            EMAIL ADDRESS
+            {t.emailLabel}
           </label>
           <input
             id="login-email"
@@ -213,7 +213,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
             value={formData.email}
             onChange={setField("email")}
             onKeyDown={handleFieldEnter("email")}
-            placeholder="Enter your email address"
+            placeholder={t.emailPlaceholder}
             className={fieldClass}
             required
             autoComplete="username"
@@ -222,7 +222,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
 
         <div>
           <label htmlFor="login-password" className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
-            PASSWORD
+            {t.passwordLabel}
           </label>
           <div className="relative">
             <input
@@ -237,7 +237,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
               }}
               onKeyUp={(e) => setCapsLockOn(e.getModifierState?.("CapsLock") ?? false)}
               onBlur={() => setCapsLockOn(false)}
-              placeholder="Enter your password"
+              placeholder={t.passwordPlaceholder}
               className={`${fieldClass} pr-12`}
               required
               autoComplete="current-password"
@@ -245,6 +245,8 @@ export default function AdminLoginCard({ onLoginSuccess }) {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? t.hidePassword : t.showPassword}
+              title={showPassword ? t.hidePassword : t.showPassword}
               className="absolute right-5 top-1/2 -translate-y-1/2 text-white/70"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -253,7 +255,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
           {capsLockOn ? (
             <p role="status" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-200">
               <ArrowBigUp size={14} className="shrink-0" />
-              Caps Lock is on
+              {t.capsLockOn}
             </p>
           ) : null}
         </div>
@@ -271,14 +273,14 @@ export default function AdminLoginCard({ onLoginSuccess }) {
               }}
               className="h-4 w-4 rounded border-white/40 bg-white/10 accent-[#fbbf24]"
             />
-            Remember my email
+            {t.rememberEmail}
           </label>
           <button
             type="button"
             onClick={() => navigate("/forgot-password")}
             className="text-sm text-white/90 underline underline-offset-2 hover:text-white"
           >
-            Forgot password?
+            {t.forgotPassword}
           </button>
         </div>
 
@@ -294,17 +296,17 @@ export default function AdminLoginCard({ onLoginSuccess }) {
           disabled={loading}
           className="h-12 w-full rounded-2xl bg-white text-[#1e40af] font-semibold text-lg flex items-center justify-center gap-2 hover:bg-white/90 transition disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {loading ? statusText || "Signing In…" : "Sign In"}
+          {loading ? statusText || t.signingIn : t.signIn}
           {!loading ? <ArrowRight size={22} /> : null}
         </button>
       </form>
 
       <div className="mt-8 border-t border-white/15 pt-5 text-center text-sm text-white/80">
-        <p>Don&apos;t have an account? Ask your Kendra admin to invite you.</p>
+        <p>{t.noAccount}</p>
         <p className="mt-1">
-          Need help signing in?{" "}
+          {t.needHelp}{" "}
           <a
-            href={`mailto:${HELP_EMAIL}?subject=${encodeURIComponent("Help signing in to the SATHEE portal")}`}
+            href={`mailto:${HELP_EMAIL}?subject=${encodeURIComponent(t.helpEmailSubject)}`}
             className="font-medium text-white underline underline-offset-2 hover:text-white/90"
           >
             {HELP_EMAIL}
