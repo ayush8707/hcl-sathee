@@ -26,7 +26,7 @@ const STAT_META = [
   { key: "students", label: "Students", Icon: GraduationCap, tint: "text-blue-600 bg-blue-50" },
   { key: "satheeMitra", label: "SATHEE MITRA", Icon: Users, tint: "text-emerald-600 bg-emerald-50" },
   { key: "satheeVishist", label: "SATHEE VISHIST", Icon: Award, tint: "text-amber-600 bg-amber-50" },
-  { key: "hclPartner", label: "CSR Partner", Icon: Handshake, tint: "text-violet-600 bg-violet-50" },
+  { key: "hclPartner", label: "HCL Partner", Icon: Handshake, tint: "text-violet-600 bg-violet-50" },
 ];
 
 export default function OtherCentres({

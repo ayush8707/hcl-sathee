@@ -4,7 +4,7 @@ const buildAttendanceTable = ({
   records = [],
   columnLabel = "Period",
   activeTab = "daily",
-  portalName = "SATHEE",
+  portalName = "HCL SATHEE",
   selectedDate = null,
   periodLabel = null,
 }) => {
@@ -30,7 +30,7 @@ const buildAttendanceTable = ({
     row.statusLabel || "—",
   ]);
 
-  const safePortal = (portalName || "SATHEE")
+  const safePortal = (portalName || "HCL-SATHEE")
     .toString()
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-|-$/g, "")

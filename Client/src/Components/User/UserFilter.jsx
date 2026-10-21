@@ -1,5 +1,3 @@
-import { formatRoleName } from "../../utils/portalMapping";
-
 const UserFilter = ({ filters, activeFilter, setActiveFilter, roleCount }) => {
   return (
     <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200/80 inline-flex flex-wrap gap-1">
@@ -14,7 +12,7 @@ const UserFilter = ({ filters, activeFilter, setActiveFilter, roleCount }) => {
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
             }`}
         >
-          {formatRoleName(f)}
+          {f}
           <span
             className={`ml-1.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full
               ${activeFilter === f ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}

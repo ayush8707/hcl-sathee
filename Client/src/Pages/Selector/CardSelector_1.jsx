@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ArrowUpRight, Building2, Globe, LogOut, Plus, X } from "lucide-react";
+import { ArrowUpRight, Globe, LogOut, Plus, X } from "lucide-react";
+import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
 import {
@@ -45,10 +46,10 @@ export default function DashboardSelect({ openHCLSathee, onLogout, userRole, use
   const builtInCards = [
     {
       id: "hcl-sathee",
-      title: "SATHEE Kendra Portal",
-      subtitle: "Manage your Kendras, students, attendance and reports",
-      icon: (size) => <Building2 size={size} />,
-      buttonText: "Open Kendra Portal",
+      title: "HCL SATHEE",
+      subtitle: "Open your internal HCL SATHEE analytics workspace",
+      icon: (size) => <LogoIcon src={HCLLogo} alt="HCL" size={size} />,
+      buttonText: "Open HCL SATHEE",
       onClick: openHCLSathee,
       badge: "Internal",
     },
@@ -93,13 +94,13 @@ export default function DashboardSelect({ openHCLSathee, onLogout, userRole, use
       <header className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 border-b border-[#3B82F6]/20 bg-[#5785d0]">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <img
-            src={SatheeLogo}
-            alt="SATHEE logo"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0"
+            src={HCLLogo}
+            alt="HCL Logo"
+            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">
-              SATHEE
+              HCL SATHEE
             </p>
             <p className="text-xs text-[#101011] truncate">Dashboard Selection</p>
           </div>

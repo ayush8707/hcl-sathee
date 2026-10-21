@@ -143,7 +143,7 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
               >
                 <option value="ADMIN">ADMIN</option>
                 <option value="SATHEE MITRA">SATHEE MITRA</option>
-                <option value="HCL PARTNER">CSR PARTNER</option>
+                <option value="HCL PARTNER">HCL PARTNER</option>
               </select>
             </div>
 

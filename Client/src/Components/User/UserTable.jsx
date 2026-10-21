@@ -1,5 +1,4 @@
 import { Trash2, Send, Users as UsersIcon } from "lucide-react";
-import { formatRoleName } from "../../utils/portalMapping";
 
 const GRID_COLS = "2fr 1.4fr 2.4fr 1.2fr 1.2fr 0.9fr";
 const DEFAULT_BADGE = { bg: "bg-gray-100 text-gray-700 border border-gray-200", icon: null };
@@ -70,7 +69,7 @@ const UserTable = ({ users, allUsersCount, roleBadge, avatarColor, onDeleteUser,
               <div>
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${badge.bg}`}>
                   {badge.icon}
-                  {formatRoleName(user.role)}
+                  {user.role}
                 </span>
               </div>
 

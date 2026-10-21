@@ -47,14 +47,6 @@ export const isAdminRole = (userRole = "") =>
 export const isHclPartnerRole = (userRole = "") =>
   String(userRole || "").trim().toUpperCase() === "HCL PARTNER";
 
-// Roles are stored as before; "HCL PARTNER" is shown as "CSR PARTNER" since
-// Kendras are run with several CSR partners.
-const ROLE_LABELS = { "HCL PARTNER": "CSR PARTNER" };
-export const formatRoleName = (role = "") => {
-  const key = String(role || "").trim().toUpperCase();
-  return ROLE_LABELS[key] || role;
-};
-
 export const isSatheeMitraRole = (userRole = "") =>
   String(userRole || "").trim().toUpperCase() === "SATHEE MITRA";
 

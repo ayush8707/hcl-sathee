@@ -190,7 +190,7 @@ export default function QueryAndSupport({
                     {admins.map((admin) => {
                       const email = admin.email || "";
                       const gmailLink = email
-                        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(title || "Query from CSR Partner")}&body=${encodeURIComponent(
+                        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(title || "Query from HCL Partner")}&body=${encodeURIComponent(
                             `Hello ${admin.name || "Admin"},\n\n${description ? `I need help with:\n${description}\n\n` : ""}Regards,\n${userName || "Partner User"}\n${userEmail || ""}`
                           )}`
                         : "";
