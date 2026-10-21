@@ -32,7 +32,7 @@ export function WelcomeBanner({ portalName, userName }) {
           </div>
 
           <p className="text-base font-medium text-slate-600">
-            {portalName ? `${portalName} Portal` : "HCL SATHEE Portal"}
+            {portalName ? `${portalName} Portal` : "SATHEE Kendra Portal"}
           </p>
         </div>
 

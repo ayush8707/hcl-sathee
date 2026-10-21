@@ -6,6 +6,7 @@ import { getApiErrorMessage } from "../../utils/apiRequest";
 import { updateSession } from "../../utils/authSession";
 import { formatAvailableDays } from "../../utils/availableDays";
 import { getInitials } from "../../utils/studentMetrics";
+import { formatRoleName } from "../../utils/portalMapping";
 
 const WEEKDAYS = [
   "Monday",
@@ -90,7 +91,7 @@ export default function MyProfile({
 
   const name = profile?.name || userName || "—";
   const email = profile?.email || userEmail || "—";
-  const role = profile?.role || userRole || "—";
+  const role = formatRoleName(profile?.role || userRole) || "—";
   const centre = profile?.centre || userCentre || "—";
   const isMitra = String(role).toUpperCase().includes("MITRA");
   const isPartner = String(role).toUpperCase().includes("PARTNER");

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2 } from "lucide-react";
-import HCLLogo from "../assets/HCL.svg";
+import SatheeLogo from "../assets/sathee.svg";
 
 function NavButtons({
   navItems,
@@ -89,13 +89,13 @@ export function MainLayout({
             <Menu size={20} />
           </button>
           <img
-            src={HCLLogo}
-            alt="HCL Logo"
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
+            src={SatheeLogo}
+            alt="SATHEE logo"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0"
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">
-              {portalName ? `${portalName} PORTAL` : "HCL SATHEE"}
+              {portalName ? `${portalName} PORTAL` : "SATHEE"}
             </p>
             <p className="text-xs text-[#101011] truncate">{roleLabel}</p>
           </div>

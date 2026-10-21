@@ -148,7 +148,7 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
       <div className="px-10 py-8">
         <h1 className="text-4xl text-black font-bold">Select Your State Portal</h1>
         <p className="mt-2 text-black">
-          Choose the HCL SATHEE portal you want to manage.
+          Choose the SATHEE Kendra you want to manage.
         </p>
       </div>
 
@@ -269,7 +269,7 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
       </div>
 
       <div className="pb-6">
-        <p className="text-center text-sm text-slate-500">HCL SATHEE Platform</p>
+        <p className="text-center text-sm text-slate-500">SATHEE Kendra Portal</p>
       </div>
 
       {isAdmin ? (

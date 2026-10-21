@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MainLayout } from "../../Components/MainLayout";
 import { fetchSupportQueries, replyToSupportQuery } from "../../services/supportQueries";
 import { getApiErrorMessage } from "../../utils/apiRequest";
+import { formatRoleName } from "../../utils/portalMapping";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -136,7 +137,7 @@ export default function AdminQueries({ portalName, navItems, activeNav, onNavCha
                         <span className="mx-2">•</span>
                         <span>{query.submittedByEmail || "No email"}</span>
                         <span className="mx-2">•</span>
-                        <span>{query.submittedByRole || "HCL Partner"}</span>
+                        <span>{formatRoleName(query.submittedByRole) || "CSR Partner"}</span>
                       </div>
                     </div>
 

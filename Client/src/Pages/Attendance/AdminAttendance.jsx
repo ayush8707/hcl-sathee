@@ -212,7 +212,7 @@ const leaveStatusMeta = (status) => {
 };
 
 export default function AdminAttendance({
-  portalName = "HCL SATHEE",
+  portalName = "SATHEE",
   navItems,
   activeNav,
   onNavChange,
