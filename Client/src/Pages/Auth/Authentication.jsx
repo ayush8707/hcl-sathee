@@ -5,13 +5,13 @@ import logo from "../../assets/sathee.svg";
 
 const HIGHLIGHTS = [
   { icon: CalendarCheck, text: "Daily attendance for students and mentors" },
-  { icon: Users, text: "Students, mentors and partners in one place" },
-  { icon: BarChart3, text: "Progress, test marks and centre reports" },
+  { icon: Users, text: "Students, mentors and CSR partners in one place" },
+  { icon: BarChart3, text: "Progress, test marks and Kendra reports" },
 ];
 
 const Footer = () => (
   <div className="pb-6">
-    <p className="text-center text-sm text-slate-500">HCL SATHEE Platform</p>
+    <p className="text-center text-sm text-slate-500">SATHEE Kendra Portal</p>
   </div>
 );
 
@@ -52,9 +52,9 @@ function SplitLayout({ onLoginSuccess }) {
             <img src={logo} alt="SATHEE logo" className="h-full w-full rounded-full object-cover" />
           </div>
 
-          <h1 className="mt-8 text-4xl font-bold tracking-tight text-slate-900">HCL SATHEE</h1>
+          <h1 className="mt-8 text-4xl font-bold tracking-tight text-slate-900">SATHEE</h1>
           <p className="mt-3 text-lg text-slate-600">
-            Centre management portal for the SATHEE programme.
+            One portal for every SATHEE Kendra set up with our CSR partners.
           </p>
 
           <ul className="mt-10 space-y-4">
