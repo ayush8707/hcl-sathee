@@ -213,20 +213,15 @@ exports.resetPassword = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
     const password = req.body.password;
 
-    if (!name || !email || !password) {
-      return fail(res, 400, "Name, email and password are required");
+    if (!email || !password) {
+      return fail(res, 400, "Email and password are required");
     }
 
     const user = await User.findByEmail(email);
     if (!user) return fail(res, 401, "Invalid credentials");
-
-    if (user.name?.trim() !== name) {
-      return fail(res, 401, "Invalid credentials");
-    }
 
     const { valid, needsRehash } = await verifyPassword(password, user.password);
     if (!valid) return fail(res, 401, "Invalid credentials");

@@ -12,49 +12,37 @@ const fieldClass =
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
 
-const encodeSecret = (value) => {
-  try {
-    return btoa(unescape(encodeURIComponent(String(value || ""))));
-  } catch {
-    return String(value || "");
-  }
-};
-
-const decodeSecret = (value) => {
-  if (!value) return "";
-  try {
-    return decodeURIComponent(escape(atob(String(value))));
-  } catch {
-    // Backward compatible with older plain-text saves
-    return String(value);
-  }
-};
-
+// "Remember me" keeps only the email address. Older versions also stored the
+// password; reading drops it from storage.
 const readRemembered = () => {
   try {
     const raw = localStorage.getItem(REMEMBER_ME_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    return {
-      name: parsed.name || "",
-      email: parsed.email || "",
-      password: decodeSecret(parsed.passwordEnc ?? parsed.password ?? ""),
-    };
+    if (!parsed || typeof parsed !== "object" || !parsed.email) return null;
+    if ("password" in parsed || "passwordEnc" in parsed || "name" in parsed) {
+      writeRemembered({ email: parsed.email });
+    }
+    return { email: String(parsed.email) };
   } catch {
     return null;
   }
 };
 
-const writeRemembered = ({ name, email, password }) => {
-  localStorage.setItem(
-    REMEMBER_ME_KEY,
-    JSON.stringify({
-      name: name || "",
-      email: email || "",
-      passwordEnc: encodeSecret(password || ""),
-    })
-  );
+const writeRemembered = ({ email }) => {
+  try {
+    localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({ email: email || "" }));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+const forgetRemembered = () => {
+  try {
+    localStorage.removeItem(REMEMBER_ME_KEY);
+  } catch {
+    // ignore storage errors
+  }
 };
 
 export default function AdminLoginCard({ onLoginSuccess }) {
@@ -66,13 +54,12 @@ export default function AdminLoginCard({ onLoginSuccess }) {
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
   useEffect(() => {
     const prefill = location.state?.loginPrefill;
-    if (prefill?.name || prefill?.email) {
+    if (prefill?.email) {
       setFormData({
-        name: String(prefill.name || "").trim(),
         email: String(prefill.email || "").trim().toLowerCase(),
         password: "",
       });
@@ -82,7 +69,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     } else {
       const saved = readRemembered();
       if (saved) {
-        setFormData(saved);
+        setFormData({ email: saved.email, password: "" });
         setRememberMe(true);
       }
     }
@@ -95,8 +82,8 @@ export default function AdminLoginCard({ onLoginSuccess }) {
   useEffect(() => {
     if (!hydrated) return;
     if (!rememberMe) return;
-    writeRemembered(formData);
-  }, [formData, rememberMe, hydrated]);
+    writeRemembered({ email: formData.email.trim().toLowerCase() });
+  }, [formData.email, rememberMe, hydrated]);
 
   const setField = (key) => (e) =>
     setFormData((prev) => ({ ...prev, [key]: e.target.value }));
@@ -111,15 +98,9 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     setError("");
     setStatusText("");
 
-    const name = formData.name.trim();
     const email = formData.email.trim().toLowerCase();
     const password = formData.password;
 
-    if (!name) {
-      setError("Full name is required.");
-      focusField("login-name");
-      return;
-    }
     if (!email) {
       setError("Email address is required.");
       focusField("login-email");
@@ -141,7 +122,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     try {
       const response = await postWithColdStartRetry(
         `${API_URL}/api/auth/login`,
-        { name, email, password },
+        { email, password },
         {
           onStatus: (status) =>
             setStatusText(
@@ -152,15 +133,15 @@ export default function AdminLoginCard({ onLoginSuccess }) {
         }
       );
 
-      if (rememberMe) writeRemembered({ name, email, password });
-      else localStorage.removeItem(REMEMBER_ME_KEY);
+      if (rememberMe) writeRemembered({ email });
+      else forgetRemembered();
 
       const user = response.data?.user || {};
       if (response.data?.token) setAuthToken(response.data.token);
 
       const sessionUser = {
         id: user.id ?? null,
-        name: user.name || name,
+        name: user.name || "",
         email: user.email || email,
         role: user.role || "",
         centre: user.centre || null,
@@ -182,16 +163,8 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     if (e.key !== "Enter") return;
     e.preventDefault();
 
-    const name = formData.name.trim();
     const email = formData.email.trim();
     const password = formData.password;
-
-    if (currentKey === "name") {
-      if (!name) return setError("Full name is required.");
-      setError("");
-      focusField("login-email");
-      return;
-    }
 
     if (currentKey === "email") {
       if (!email) return setError("Email address is required.");
@@ -202,8 +175,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
     }
 
     if (currentKey === "password") {
-      if (!name || !email || !password) {
-        if (!name) return focusField("login-name");
+      if (!email || !password) {
         if (!email) return focusField("login-email");
         return setError("Password is required.");
       }
@@ -227,44 +199,33 @@ export default function AdminLoginCard({ onLoginSuccess }) {
         Sign in to access your HCL SATHEE account.
       </p>
 
-      <form
-        className="space-y-6"
-        onSubmit={handleLogin}
-        autoComplete="off"
-        data-lpignore="true"
-        data-1p-ignore="true"
-      >
-        {[
-          ["FULL NAME", "name", "text", "Enter your full name", "login-name"],
-          ["EMAIL ADDRESS", "email", "email", "Enter your email address", "login-email"],
-        ].map(([label, key, type, placeholder, id]) => (
-          <div key={key}>
-            <label className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
-              {label}
-            </label>
-            <input
-              id={id}
-              name={key}
-              type={type}
-              value={formData[key]}
-              onChange={setField(key)}
-              onKeyDown={handleFieldEnter(key)}
-              placeholder={placeholder}
-              className={fieldClass}
-              required
-              autoComplete="off"
-            />
-          </div>
-        ))}
+      <form className="space-y-6" onSubmit={handleLogin}>
+        <div>
+          <label htmlFor="login-email" className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
+            EMAIL ADDRESS
+          </label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={setField("email")}
+            onKeyDown={handleFieldEnter("email")}
+            placeholder="Enter your email address"
+            className={fieldClass}
+            required
+            autoComplete="username"
+          />
+        </div>
 
         <div>
-          <label className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
+          <label htmlFor="login-password" className="text-xs font-semibold tracking-widest opacity-75 block mb-2">
             PASSWORD
           </label>
           <div className="relative">
             <input
               id="login-password"
-              name="login-password"
+              name="password"
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={setField("password")}
@@ -272,9 +233,7 @@ export default function AdminLoginCard({ onLoginSuccess }) {
               placeholder="Enter your password"
               className={`${fieldClass} pr-12`}
               required
-              autoComplete="off"
-              data-lpignore="true"
-              data-1p-ignore="true"
+              autoComplete="current-password"
             />
             <button
               type="button"
@@ -294,12 +253,12 @@ export default function AdminLoginCard({ onLoginSuccess }) {
               onChange={(e) => {
                 const checked = e.target.checked;
                 setRememberMe(checked);
-                if (checked) writeRemembered(formData);
-                else localStorage.removeItem(REMEMBER_ME_KEY);
+                if (checked) writeRemembered({ email: formData.email.trim().toLowerCase() });
+                else forgetRemembered();
               }}
               className="h-4 w-4 rounded border-white/40 bg-white/10 accent-[#fbbf24]"
             />
-            Remember me
+            Remember my email
           </label>
           <button
             type="button"
