@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { toDate, toDateOnly } = require("../Utils/firestoreHelpers");
 const { getCanonicalCentreKey } = require("../Utils/centreMatch");
 
@@ -20,17 +20,16 @@ const toApiTest = (row) => {
 };
 
 const findByCourse = async (course, centre = null) => {
-  let query = getSupabase()
-    .from(TABLE)
-    .select("*")
-    .eq("course", String(course || "").trim().toUpperCase());
-  if (centre) {
-    const key = getCanonicalCentreKey(centre);
+  const key = centre ? getCanonicalCentreKey(centre) : null;
+  const data = await selectAllRows(() => {
+    let query = getSupabase()
+      .from(TABLE)
+      .select("*")
+      .eq("course", String(course || "").trim().toUpperCase());
     if (key) query = query.eq("centre_key", key);
-  }
-  const { data, error } = await query;
-  assertNoError(error, "Failed to list tests");
-  return (data || [])
+    return query;
+  }, "Failed to list tests");
+  return data
     .map(toApiTest)
     .sort((a, b) => (a.testNumber || 0) - (b.testNumber || 0));
 };

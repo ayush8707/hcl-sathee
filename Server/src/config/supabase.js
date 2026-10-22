@@ -45,6 +45,25 @@ const assertNoError = (error, context) => {
   throw err;
 };
 
+/**
+ * Supabase returns at most 1000 rows per request, so a range query (a month or
+ * year of attendance, every mark for a course) can be silently cut short.
+ * `buildQuery` must return a fresh select query each call; pages are read in
+ * id order until a short page comes back.
+ */
+const PAGE_SIZE = 1000;
+const selectAllRows = async (buildQuery, context) => {
+  const rows = [];
+  for (let start = 0; ; start += PAGE_SIZE) {
+    const { data, error } = await buildQuery()
+      .order("id", { ascending: true })
+      .range(start, start + PAGE_SIZE - 1);
+    assertNoError(error, context);
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) return rows;
+  }
+};
+
 /** Postgres unique_violation error code, raised on duplicate email/phone/etc. */
 const UNIQUE_VIOLATION = "23505";
 
@@ -92,6 +111,7 @@ module.exports = {
   initSupabase,
   getSupabase,
   assertNoError,
+  selectAllRows,
   UNIQUE_VIOLATION,
   paginateByCreatedAt,
 };

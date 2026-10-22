@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { uploadToStorage } = require("../config/storage");
 const path = require("path");
 const { toDate } = require("../Utils/firestoreHelpers");
@@ -105,13 +105,11 @@ const findByDate = async (date) => {
 };
 
 const findByDateRange = async (fromDate, toDateArg) => {
-  const { data, error } = await getSupabase()
-    .from(TABLE)
-    .select("*")
-    .gte("date", fromDate)
-    .lte("date", toDateArg);
-  assertNoError(error, "Failed to load attendance");
-  return (data || []).map(toApiRecord);
+  const data = await selectAllRows(
+    () => getSupabase().from(TABLE).select("*").gte("date", fromDate).lte("date", toDateArg),
+    "Failed to load attendance"
+  );
+  return data.map(toApiRecord);
 };
 
 const findByUserAndDate = async (userId, date) => {

@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { toDate, toDateOnly } = require("../Utils/firestoreHelpers");
 
 const TABLE = "daily_subject_attendances";
@@ -82,13 +82,11 @@ const findByDateRange = async (fromDate, toDateArg, centre = null) => {
   const to = toDateOnly(toDateArg);
   if (!from || !to) return [];
 
-  const { data, error } = await getSupabase()
-    .from(TABLE)
-    .select("*")
-    .gte("date", from)
-    .lte("date", to);
-  assertNoError(error, "Failed to load daily subject attendance");
-  return filterByCentre((data || []).map(toApiLog), centre);
+  const data = await selectAllRows(
+    () => getSupabase().from(TABLE).select("*").gte("date", from).lte("date", to),
+    "Failed to load daily subject attendance"
+  );
+  return filterByCentre(data.map(toApiLog), centre);
 };
 
 const findByStudentAndSubject = async (studentId, subject) => {

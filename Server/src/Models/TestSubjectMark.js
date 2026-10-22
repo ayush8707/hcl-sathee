@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { toDate } = require("../Utils/firestoreHelpers");
 
 const TABLE = "test_subject_marks";
@@ -84,12 +84,11 @@ const findByStudentIds = async (studentIds = []) => {
 };
 
 const findByCourse = async (course, centre = null) => {
-  const { data, error } = await getSupabase()
-    .from(TABLE)
-    .select("*")
-    .eq("course", String(course || "").trim().toUpperCase());
-  assertNoError(error, "Failed to load course marks");
-  let rows = (data || []).map(toApiMark);
+  const data = await selectAllRows(
+    () => getSupabase().from(TABLE).select("*").eq("course", String(course || "").trim().toUpperCase()),
+    "Failed to load course marks"
+  );
+  let rows = data.map(toApiMark);
   if (centre) {
     const { matchesCentre } = require("../Utils/centreMatch");
     rows = rows.filter((r) => matchesCentre(r.centre, centre));
