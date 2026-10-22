@@ -3,11 +3,12 @@ import { MainLayout } from "../../Components/MainLayout";
 import { matchesPortalCentre } from "../../utils/portalMapping";
 
 import StudentToolbar from "../../Components/Student/StudentToolbar";
+import { COURSE_OPTIONS, courseTone } from "../../utils/courseStyles";
+import { getCentreId } from "../../utils/centreDirectory";
 import StudentTable from "../../Components/Student/StudentTable";
 import NewStudent from "../../Components/Student/NewStudent";
 import ImportStudentsModal from "../../Components/Student/ImportStudentsModal";
 import StudentDetailsModal from "../../Components/Student/StudentDetailsModal";
-import TableSortControls from "../../Components/common/TableSortControls";
 import {
   fetchStudents,
   createStudent,
@@ -161,21 +162,30 @@ export default function Student({
     loadStudents();
   }, [isCustomCentre]);
 
+  const centreStudents = useMemo(
+    () => students.filter((student) => matchesPortalCentre(student.centre, portalName)),
+    [students, portalName]
+  );
+
+  // Student count per course, for the filter chips above the table.
+  const courseCounts = useMemo(() => {
+    const counts = new Map();
+    for (const student of centreStudents) {
+      const course = String(student.course || "").trim().toUpperCase();
+      if (course) counts.set(course, (counts.get(course) || 0) + 1);
+    }
+    return COURSE_OPTIONS.filter((course) => counts.has(course)).map((course) => [course, counts.get(course)]);
+  }, [centreStudents]);
+
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return students.filter((student) => {
-      if (!matchesPortalCentre(student.centre, portalName)) return false;
+    const q = search.trim().toLowerCase();
+    return centreStudents.filter((student) => {
       if (courseFilter !== "All Courses" && student.course !== courseFilter) return false;
-      if (!search) return true;
-      return (
-        student.name.toLowerCase().includes(q) ||
-        String(student.id || "").toLowerCase().includes(q) ||
-        (student.enrollmentNo || "").toLowerCase().includes(q) ||
-        (student.centre || "").toLowerCase().includes(q) ||
-        (student.course || "").toLowerCase().includes(q)
-      );
+      if (!q) return true;
+      return [student.name, student.studentId, student.enrollmentNo, student.email, student.phone, student.course, student.id]
+        .some((value) => String(value ?? "").toLowerCase().includes(q));
     });
-  }, [search, courseFilter, students, portalName]);
+  }, [search, courseFilter, centreStudents]);
 
   const sortedStudents = useMemo(
     () => sortTableRows(filtered, { sortBy, direction: sortDirection }),
@@ -198,17 +208,52 @@ export default function Student({
       onLogout={onLogout}
       roleLabel={roleLabel}
     >
-      <div style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif", background: "#f5f7fa", padding: "28px 28px 40px" }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1f2e", margin: 0 }}>Students</h1>
-          <p style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
-            {readOnly
-              ? "View student records, enrollment details, and assigned batches."
-              : "Manage student records, enrollment details, and assigned batches."}
-          </p>
+      <div className="min-h-screen bg-slate-50 p-4 font-sans sm:p-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              Students
+              {getCentreId(portalName) ? (
+                <span className="ml-3 align-middle rounded-full bg-slate-200/70 px-2.5 py-1 font-mono text-sm font-semibold text-slate-600">
+                  {getCentreId(portalName)}
+                </span>
+              ) : null}
+            </h1>
+            <p className="mt-1 text-slate-500">
+              {readOnly
+                ? "View student records, enrollment details, and assigned batches."
+                : "Manage student records, enrollment details, and assigned batches."}
+            </p>
+          </div>
         </div>
 
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)", overflow: "hidden" }}>
+        {courseCounts.length ? (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {[["All Courses", centreStudents.length], ...courseCounts].map(([course, count]) => {
+              const active = courseFilter === course;
+              const tone = course === "All Courses" ? "bg-slate-100 text-slate-700 ring-slate-200" : courseTone(course);
+              return (
+                <button
+                  key={course}
+                  type="button"
+                  onClick={() => {
+                    setCourseFilter(active && course !== "All Courses" ? "All Courses" : course);
+                    setPage(1);
+                  }}
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ring-1 ring-inset transition ${
+                    active ? "bg-[#3B82F6] text-white ring-[#3B82F6]" : `${tone} hover:brightness-95`
+                  }`}
+                >
+                  {course === "All Courses" ? "All" : course}
+                  <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-white/70"}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <StudentToolbar
             search={search}
             onSearch={(val) => {
@@ -220,35 +265,20 @@ export default function Student({
               setCourseFilter(val);
               setPage(1);
             }}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            sortDirection={sortDirection}
+            onSortDirectionChange={setSortDirection}
             onAddStudent={() => setShowNewStudent(true)}
             onImportStudents={() => setShowImportStudents(true)}
             readOnly={readOnly}
           />
 
           {studentsError ? (
-            <div
-              style={{
-                margin: "0 20px 12px",
-                padding: "12px 14px",
-                borderRadius: 10,
-                border: "1px solid #fecaca",
-                background: "#fef2f2",
-                color: "#b91c1c",
-                fontSize: 14,
-              }}
-            >
+            <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:mx-5">
               {studentsError}
             </div>
           ) : null}
-
-          <div style={{ padding: "12px 20px 0", display: "flex", justifyContent: "flex-end" }}>
-            <TableSortControls
-              value={sortDirection}
-              onChange={setSortDirection}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-            />
-          </div>
 
           <StudentTable
             paginated={paginated}
@@ -261,58 +291,28 @@ export default function Student({
             onDeleteStudent={readOnly ? undefined : handleDeleteStudent}
           />
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "14px 20px",
-              borderTop: "1px solid #e2e8f0",
-              background: "#f8fafc",
-              flexWrap: "wrap",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 13, color: "#64748b", fontWeight: 500 }}>
-              Showing {startCount}-{endCount} of {totalStudents} students
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-semibold text-slate-700">{startCount}–{endCount}</span> of{" "}
+              <span className="font-semibold text-slate-700">{totalStudents}</span> students
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage <= 1}
-                style={{
-                  borderRadius: 8,
-                  border: "1px solid #cbd5e1",
-                  padding: "8px 14px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: currentPage <= 1 ? "#94a3b8" : "#334155",
-                  background: "#fff",
-                  cursor: currentPage <= 1 ? "not-allowed" : "pointer",
-                  opacity: currentPage <= 1 ? 0.6 : 1,
-                }}
+                className="rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
               </button>
-              <span style={{ fontSize: 13, color: "#475569", fontWeight: 600 }}>
+              <span className="px-1 text-sm font-medium text-slate-600">
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage >= totalPages}
-                style={{
-                  borderRadius: 8,
-                  border: "1px solid #cbd5e1",
-                  padding: "8px 14px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: currentPage >= totalPages ? "#94a3b8" : "#334155",
-                  background: "#fff",
-                  cursor: currentPage >= totalPages ? "not-allowed" : "pointer",
-                  opacity: currentPage >= totalPages ? 0.6 : 1,
-                }}
+                className="rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
               </button>

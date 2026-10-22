@@ -1,36 +1,52 @@
-import { Trash2 } from "lucide-react";
+import { Mail, Phone, Trash2 } from "lucide-react";
 import CourseBadge from "./CourseBadge";
-import { SerialNoCell, SerialNoHeader } from "../common/tableSerial";
-import { getCentreId } from "../../utils/centreDirectory";
+import { AVATAR_COLORS, getInitials } from "../../utils/studentMetrics";
 
-const TABLE_COLUMNS = [
-  "Student Full Name",
-  "Gender",
-  "Centre",
-  "Kendra ID",
-  "Student ID",
-  "Email Address",
-  "Phone Number",
-  "Course Enrolled",
-  "Actions",
-];
+const avatarColor = (student) =>
+  student.avatarColor || AVATAR_COLORS[(Number(student.id) || 0) % AVATAR_COLORS.length];
 
-// Short, badge-like columns read better centered; everything else stays
-// left-aligned with the text it holds.
-const CENTERED_COLUMNS = new Set(["Kendra ID", "Actions"]);
+const studentCode = (student) => student.studentId || student.enrollmentNo || student.id;
 
-const headerStyle = {
-  padding: "14px 20px",
-  textAlign: "left",
-  fontSize: 13,
-  fontWeight: 700,
-  color: "#374151",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-};
+function Avatar({ student }) {
+  return (
+    <span
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+      style={{ background: avatarColor(student) }}
+    >
+      {getInitials(student.name || "", "ST")}
+    </span>
+  );
+}
 
-const cellStyle = { padding: "16px 20px", color: "#374151" };
-const centerCellStyle = { ...cellStyle, textAlign: "center" };
+function NameButton({ student, onViewDetails }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onViewDetails?.(student)}
+      className="flex min-w-0 items-center gap-3 text-left"
+    >
+      <Avatar student={student} />
+      <span className="min-w-0">
+        <span className="block truncate font-semibold text-slate-900 group-hover:text-blue-700">{student.name}</span>
+        <span className="block font-mono text-xs text-slate-500">{studentCode(student)}</span>
+      </span>
+    </button>
+  );
+}
+
+function DeleteButton({ student, onDeleteStudent }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onDeleteStudent?.(student)}
+      title="Delete student"
+      aria-label={`Delete ${student.name}`}
+      className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+    >
+      <Trash2 size={17} />
+    </button>
+  );
+}
 
 export default function StudentTable({
   paginated,
@@ -39,114 +55,76 @@ export default function StudentTable({
   readOnly = false,
   serialOffset = 0,
 }) {
-  const colCount = readOnly ? 9 : 10;
+  if (paginated.length === 0) {
+    return <p className="px-6 py-16 text-center text-sm text-slate-500">No students found.</p>;
+  }
 
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #e2e8f0" }}>
-            <SerialNoHeader
-              style={{
-                ...headerStyle,
-                width: 56,
-                textAlign: "center",
-              }}
-            />
-            {(readOnly ? TABLE_COLUMNS.slice(0, 8) : TABLE_COLUMNS).map((col) => (
-              <th
-                key={col}
-                style={{
-                  ...headerStyle,
-                  ...(CENTERED_COLUMNS.has(col) ? { textAlign: "center" } : {}),
-                }}
-              >
-                {col}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {paginated.length === 0 ? (
-            <tr>
-              <td
-                colSpan={colCount}
-                style={{ padding: "60px 20px", textAlign: "center", color: "#64748b" }}
-              >
-                No students found
-              </td>
+    <>
+      {/* Computers and tablets: table */}
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="w-14 px-5 py-3 text-center">#</th>
+              <th className="px-5 py-3">Student</th>
+              <th className="px-5 py-3">Gender</th>
+              <th className="px-5 py-3">Contact</th>
+              <th className="px-5 py-3">Course</th>
+              {!readOnly ? <th className="w-20 px-5 py-3 text-center">Actions</th> : null}
             </tr>
-          ) : (
-            paginated.map((s, i) => (
-              <tr
-                key={s.id}
-                style={{
-                  background: i % 2 === 0 ? "#ffffff" : "#f8fafc",
-                  borderBottom: "1px solid #f1f5f9",
-                }}
-              >
-                <SerialNoCell
-                  index={serialOffset + i}
-                  style={{ padding: "16px 20px", textAlign: "center", color: "#94a3b8", fontWeight: 600 }}
-                />
-                <td style={cellStyle}>
-                  <span
-                    style={{
-                      fontWeight: 500,
-                      color: "#1e40af",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      textUnderlineOffset: "2px",
-                    }}
-                    onClick={() => onViewDetails && onViewDetails(s)}
-                  >
-                    {s.name}
+          </thead>
+          <tbody>
+            {paginated.map((s, i) => (
+              <tr key={s.id} className="group border-b border-slate-100 transition-colors last:border-0 hover:bg-blue-50/40">
+                <td className="px-5 py-3.5 text-center font-medium tabular-nums text-slate-400">{serialOffset + i + 1}</td>
+                <td className="px-5 py-3.5">
+                  <NameButton student={s} onViewDetails={onViewDetails} />
+                </td>
+                <td className="px-5 py-3.5 text-slate-600">{s.gender || "—"}</td>
+                <td className="px-5 py-3.5">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <Mail size={13} className="shrink-0 text-slate-400" />
+                    <span className="truncate">{s.email || "—"}</span>
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-slate-500">
+                    <Phone size={13} className="shrink-0 text-slate-400" />
+                    {s.phone || "—"}
                   </span>
                 </td>
-                <td style={cellStyle}>{s.gender}</td>
-                <td style={cellStyle}>{s.centre}</td>
-                <td style={{ ...centerCellStyle, fontFamily: "monospace" }}>
-                  {getCentreId(s.centre) ?? "—"}
-                </td>
-                <td style={{ ...cellStyle, fontFamily: "monospace" }}>
-                  {s.studentId || s.enrollmentNo || s.id}
-                </td>
-                <td style={{ ...cellStyle, color: "#1e40af" }}>{s.email}</td>
-                <td style={cellStyle}>{s.phone}</td>
-                <td style={cellStyle}>
+                <td className="px-5 py-3.5">
                   <CourseBadge course={s.course} />
                 </td>
                 {!readOnly ? (
-                  <td style={centerCellStyle}>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteStudent?.(s)}
-                      title="Delete student"
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        color: "#94a3b8",
-                        cursor: "pointer",
-                        padding: 4,
-                        display: "inline-flex",
-                        alignItems: "center",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "#dc2626";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#94a3b8";
-                      }}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                  <td className="px-5 py-3.5 text-center">
+                    <DeleteButton student={s} onDeleteStudent={onDeleteStudent} />
                   </td>
                 ) : null}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Phones: one card per student */}
+      <ul className="divide-y divide-slate-100 md:hidden">
+        {paginated.map((s) => (
+          <li key={s.id} className="group flex items-start justify-between gap-3 px-4 py-4">
+            <div className="min-w-0 flex-1">
+              <NameButton student={s} onViewDetails={onViewDetails} />
+              <div className="mt-2 flex flex-wrap items-center gap-2 pl-[52px] text-xs text-slate-500">
+                <CourseBadge course={s.course} />
+                {s.gender ? <span>{s.gender}</span> : null}
+              </div>
+              <div className="mt-1.5 space-y-0.5 pl-[52px] text-xs text-slate-600">
+                {s.email ? <p className="truncate">{s.email}</p> : null}
+                {s.phone ? <p>{s.phone}</p> : null}
+              </div>
+            </div>
+            {!readOnly ? <DeleteButton student={s} onDeleteStudent={onDeleteStudent} /> : null}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

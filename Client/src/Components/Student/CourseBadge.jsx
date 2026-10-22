@@ -1,21 +1,9 @@
+import { courseTone } from "../../utils/courseStyles";
+
 export default function CourseBadge({ course }) {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "3px 10px",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 600,
-        background: "#f0f9ff",
-        color: "#1e40af",
-        border: "1px solid #bae6fd",
-        fontFamily: "Inter, sans-serif",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {course}
+    <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${courseTone(course)}`}>
+      {course || "—"}
     </span>
   );
 }
