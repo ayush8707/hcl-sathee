@@ -187,11 +187,113 @@ const marksTables = (doc, y, tables, fallbackLabel) => {
   return y;
 };
 
+const pct = (value) => (value == null ? "—" : `${value}%`);
+const code = (student) => student.studentId || student.enrollmentNo || student.id;
+
+const delta = (value, previous, unit, prevLabel) => {
+  if (value == null || previous == null) return "";
+  const diff = Math.round((value - previous) * 10) / 10;
+  if (diff === 0) return `same as ${prevLabel}`;
+  return `${diff > 0 ? "+" : ""}${diff}${unit} vs ${prevLabel}`;
+};
+
+const addSummary = (doc, y, summary) =>
+  addTable(doc, y, {
+    head: ["Measure", "This period", "Change"],
+    body: [
+      ["Students in selected courses", summary.students, ""],
+      ["New admissions", summary.newAdmissions, ""],
+      ["Average attendance", pct(summary.avgAttendance), delta(summary.avgAttendance, summary.prevAttendance, " pts", summary.prevLabel)],
+      ["Average test score", pct(summary.avgScore), delta(summary.avgScore, summary.prevScore, " pts", summary.prevLabel)],
+      ["Tests held", summary.testsHeld, delta(summary.testsHeld, summary.prevTestsHeld, "", summary.prevLabel)],
+      ["Students at risk (attendance < 75% or score < 35%)", summary.atRisk, ""],
+    ],
+  });
+
+const addEngagement = (doc, y, overview) => {
+  const { bands } = overview;
+  y = addSubHeading(doc, "Attendance spread", y);
+  y = addTable(doc, y, {
+    head: ["90% or more", "75-89%", "Below 75%", "No attendance taken"],
+    body: [[bands.high, bands.mid, bands.low, bands.none]],
+  });
+
+  y = addSubHeading(doc, "Students needing attention", y);
+  y = overview.atRisk.length
+    ? addTable(doc, y, {
+        head: ["Student", "ID", "Course", "Reason"],
+        body: overview.atRisk.map((r) => [r.student.name, code(r.student), r.student.courseCode, r.reasons.join(" · ")]),
+      })
+    : addNote(doc, "No students below the attendance or score thresholds.", y);
+
+  y = addSubHeading(doc, "Low attendance and absence streaks", y);
+  y = overview.lowAttendance.length
+    ? addTable(doc, y, {
+        head: ["Student", "Course", "Attendance", "Days present", "Longest absence (days)"],
+        body: overview.lowAttendance.map((a) => [a.student.name, a.student.courseCode, `${a.percentage}%`, `${a.presentDays} / ${a.totalDays}`, a.longestAbsence]),
+      })
+    : addNote(doc, "Everyone with attendance records is at 75% or above.", y);
+
+  y = addSubHeading(doc, "Top 5 students", y);
+  y = overview.topStudents.length
+    ? addTable(doc, y, { head: ["Student", "Course", "Avg score"], body: overview.topStudents.map((s) => [s.student.name, s.student.courseCode, `${s.score}%`]) })
+    : addNote(doc, "No marks recorded in this period.", y);
+
+  if (overview.bottomStudents.length) {
+    y = addSubHeading(doc, "Bottom 5 students", y);
+    y = addTable(doc, y, { head: ["Student", "Course", "Avg score"], body: overview.bottomStudents.map((s) => [s.student.name, s.student.courseCode, `${s.score}%`]) });
+  }
+
+  y = addSubHeading(doc, "Subject-wise average marks", y);
+  return overview.subjectAverages.length
+    ? addTable(doc, y, { head: ["Subject", "Marks entered", "Average"], body: overview.subjectAverages.map((s) => [s.subject, s.entries, `${s.average}%`]) })
+    : addNote(doc, "No marks recorded in this period.", y);
+};
+
+const addActivity = (doc, y, activity) => {
+  y = addSubHeading(doc, "Mentors", y);
+  y = activity.mentorRows.length
+    ? addTable(doc, y, {
+        head: ["Name", "Role", "Days present", "Sessions taught", "Subjects"],
+        body: activity.mentorRows.map((m) => [m.name, m.type, m.daysPresent, m.type === "Vishist" ? m.sessions : "—", m.subjects.join(", ") || "—"]),
+      })
+    : addNote(doc, "No Sathee Mitra or Vishist accounts in this centre.", y);
+
+  y = addSubHeading(doc, "Centre activity", y);
+  y = addTable(doc, y, {
+    head: ["Item", "Count", "Detail"],
+    body: [
+      ["Vishist sessions", activity.vishistSessions, ""],
+      ["Leave requests", activity.leaves.total, `${activity.leaves.approved} approved, ${activity.leaves.rejected} rejected, ${activity.leaves.pending} pending`],
+      ["Queries raised", activity.queries.total, `${activity.queries.replied} replied, ${activity.queries.open} open`],
+      ["Announcements", activity.announcements.total, activity.announcements.latest.join("; ")],
+    ],
+  });
+  return y;
+};
+
+const addYearOverview = (doc, y, { monthlyTrend, perStudent, courses }) => {
+  y = addLineChart(doc, y, { title: "Monthly Attendance", data: monthlyTrend.map((m) => ({ label: m.label, percentage: m.attendance ?? 0 })) });
+  y = addLineChart(doc, y, { title: "Monthly Average Test Score", data: monthlyTrend.map((m) => ({ label: m.label, percentage: m.score ?? 0 })) });
+  y = addTable(doc, y, { head: ["Month", "Attendance", "Avg test score"], body: monthlyTrend.map((m) => [m.label, pct(m.attendance), pct(m.score)]) });
+  for (const course of courses) {
+    y = addCourseHeading(doc, course, y);
+    const rows = perStudent.filter((p) => p.student.courseCode === course);
+    y = rows.length
+      ? addTable(doc, y, {
+          head: ["Student", "ID", "Attendance", "Avg score", "Tests taken"],
+          body: rows.map((p) => [p.student.name, code(p.student), pct(p.attendance), pct(p.score), p.tests]),
+        })
+      : addNote(doc, "No students in this course.", y);
+  }
+  return y;
+};
+
 /**
- * Renders the exact same data shown on screen (report.performanceByCourse /
- * report.attendanceByCourse, per-student 0/0 and 0% defaults already baked
- * in) into a paginated PDF, with Sathee Mitra / Vishist sections optionally
- * prepended — the heading numbers shift accordingly.
+ * Renders the same report shown on screen into a paginated PDF: Summary,
+ * then per-course Performance and Attendance (or a Year overview for year
+ * reports), Student engagement and Mentors & centre activity. Sathee Mitra /
+ * Vishist contact lists are optionally added after the Summary.
  */
 export const buildCentreReportPdf = ({
   centreValue,
@@ -199,7 +301,14 @@ export const buildCentreReportPdf = ({
   place,
   address,
   dateLabel,
-  periodLabel, // "Weekly" | "Monthly"
+  periodLabel, // "Weekly" | "Monthly" (controls the Pre-Mid tables)
+  periodTitle, // e.g. "Oct 2026", "Academic year 2026–27"
+  rangeLabel,
+  isYear,
+  summary,
+  overview,
+  monthlyTrend,
+  activity,
   courses,
   performanceByCourse,
   attendanceByCourse,
@@ -214,7 +323,7 @@ export const buildCentreReportPdf = ({
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
   setText(doc, INK);
-  doc.text(`${periodLabel.toUpperCase()} REPORT — ${centreValue}`, pageWidth / 2, 50, {
+  doc.text(`${String(periodTitle || periodLabel).toUpperCase()} REPORT — ${centreValue}`, pageWidth / 2, 50, {
     align: "center",
   });
   doc.setFont(undefined, "normal");
@@ -226,6 +335,7 @@ export const buildCentreReportPdf = ({
     `Kendra ID: ${centreId ?? "—"}`,
     `Place: ${place ?? "—"}`,
     `Address: ${address ?? "—"}`,
+    `Period: ${rangeLabel ?? "—"}`,
   ].forEach((line) => {
     doc.text(line, MARGIN, leftY);
     leftY += 14;
@@ -238,6 +348,11 @@ export const buildCentreReportPdf = ({
 
   let headingNumber = 1;
 
+  if (summary) {
+    y = addSectionHeading(doc, "Summary", y, headingNumber++);
+    y = addSummary(doc, y, summary);
+  }
+
   if (includeMitra) {
     y = addSectionHeading(doc, "Sathee Mitra", y, headingNumber++);
     y = addManagedBySection(doc, y, mitraRows) + 4;
@@ -248,46 +363,61 @@ export const buildCentreReportPdf = ({
     y = addVishistSection(doc, y, vishistRows) + 4;
   }
 
-  y = addSectionHeading(doc, "Performance", y, headingNumber++);
-  for (const course of courses) {
-    y = addCourseHeading(doc, course, y);
-    const perf = performanceByCourse[course];
+  if (isYear) {
+    y = addSectionHeading(doc, "Year overview", y, headingNumber++);
+    y = addYearOverview(doc, y, { monthlyTrend: monthlyTrend || [], perStudent: overview?.perStudent || [], courses });
+  } else {
+    y = addSectionHeading(doc, "Performance", y, headingNumber++);
+    for (const course of courses) {
+      y = addCourseHeading(doc, course, y);
+      const perf = performanceByCourse[course];
 
-    y = addLineChart(doc, y, { title: "Average Score Trend", data: perf.trend || [] });
+      y = addLineChart(doc, y, { title: "Average Score Trend", data: perf.trend || [] });
 
-    y = addSubHeading(doc, "Performance Test", y);
-    y = perf.performance.length
-      ? marksTables(doc, y, perf.performance, "Week")
-      : addNote(doc, "No performance tests recorded for this period.", y);
+      y = addSubHeading(doc, "Performance Test", y);
+      y = perf.performance.length
+        ? marksTables(doc, y, perf.performance, "Week")
+        : addNote(doc, "No performance tests recorded for this period.", y);
 
-    if (periodLabel === "Monthly") {
-      y = addSubHeading(doc, "Pre-Mid Test", y);
-      y = perf.preMid.length
-        ? marksTables(doc, y, perf.preMid, "Pre-Mid Test")
-        : addNote(doc, "No pre-mid test recorded for this period.", y);
+      if (periodLabel === "Monthly") {
+        y = addSubHeading(doc, "Pre-Mid Test", y);
+        y = perf.preMid.length
+          ? marksTables(doc, y, perf.preMid, "Pre-Mid Test")
+          : addNote(doc, "No pre-mid test recorded for this period.", y);
+      }
+      y += 4;
     }
-    y += 4;
+
+    y = addSectionHeading(doc, "Attendance", y, headingNumber++);
+    for (const course of courses) {
+      y = addCourseHeading(doc, course, y);
+      const courseAttendance = attendanceByCourse[course] || { rows: [], trend: [] };
+      const rows = courseAttendance.rows || [];
+
+      y = addLineChart(doc, y, { title: "Daily Attendance Trend", data: courseAttendance.trend || [] });
+
+      y = rows.length
+        ? addTable(doc, y, {
+            head: ["Student", "Student ID", "Attendance %"],
+            body: rows.map((r) => [
+              r.student.name,
+              r.student.studentId || r.student.enrollmentNo || r.student.id,
+              `${r.percentage}%`,
+            ]),
+          })
+        : addNote(doc, "No students in this course.", y);
+      y += 4;
+    }
   }
 
-  y = addSectionHeading(doc, "Attendance", y, headingNumber);
-  for (const course of courses) {
-    y = addCourseHeading(doc, course, y);
-    const courseAttendance = attendanceByCourse[course] || { rows: [], trend: [] };
-    const rows = courseAttendance.rows || [];
+  if (overview) {
+    y = addSectionHeading(doc, "Student engagement", y, headingNumber++);
+    y = addEngagement(doc, y, overview);
+  }
 
-    y = addLineChart(doc, y, { title: "Daily Attendance Trend", data: courseAttendance.trend || [] });
-
-    y = rows.length
-      ? addTable(doc, y, {
-          head: ["Student", "Student ID", "Attendance %"],
-          body: rows.map((r) => [
-            r.student.name,
-            r.student.studentId || r.student.enrollmentNo || r.student.id,
-            `${r.percentage}%`,
-          ]),
-        })
-      : addNote(doc, "No students in this course.", y);
-    y += 4;
+  if (activity) {
+    y = addSectionHeading(doc, "Mentors & centre activity", y, headingNumber);
+    addActivity(doc, y, activity);
   }
 
   return doc;

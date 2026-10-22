@@ -522,12 +522,19 @@ Two tabs.
 
 A printable report for the current centre.
 
-1. Choose **Weekly** (current Mon–Sun) or **Monthly** (current calendar month) and one or more courses (default all), then **Go**.
-2. On screen, per course:
-   - **Performance:** an average-score trend line, plus student × subject tables for the first four Performance tests in range (and, for Monthly, every Pre-Mid test). Cells show `obtained/total`, "Not Opted" if the subject was not chosen, and "0/0" if enrolled but no mark.
-   - **Attendance:** a daily attendance trend (days with no records count as 0%) and a per-student table with attendance % (present days ÷ days attendance was taken).
-   - Header: centre, Kendra ID, place, address, generated date.
-3. **Export Report** produces an A4 **PDF** (`hcl-sathee-<centre>-<period>-report-<date>.pdf`). A dialog lets the Admin include a **Sathee Mitra** list (name, email, phone) and/or a **Sathee Vishist** list.
+1. Choose a period, one or more courses (default all), then **Go**:
+   - **This week** (current Mon–Sun), **Month** (any month), **Year** (Jan–Dec) or **Academic year** (Apr–Mar).
+2. On screen:
+   1. **Summary:** students, new admissions, average attendance, average test score, tests held and students at risk (attendance below 75% or average score below 35%), with the change against the previous period.
+   2. For week and month reports, per course:
+      - **Performance:** an average-score trend line, plus student × subject tables for the first four Performance tests in range (and, for Month, every Pre-Mid test). Cells show `obtained/total`, "Not Opted" if the subject was not chosen, and "0/0" if enrolled but no mark.
+      - **Attendance:** a daily attendance trend up to today (days with no records count as 0%) and a per-student table with attendance % (present days ÷ days attendance was taken).
+      - Courses with no students are listed in one line.
+   3. For year reports, a **Year overview**: month-by-month attendance and average score, plus a per-student table (attendance, average score, tests taken) for each course.
+   4. **Student engagement:** attendance spread (90%+, 75–89%, below 75%, none), students needing attention, low attendance with the longest absence streak, top and bottom 5 students, subject-wise average marks.
+   5. **Mentors & centre activity:** days present for each Sathee Mitra (Vishists: days they taught), Vishist sessions and subjects, leave requests, queries raised and replied, and announcements posted. If one of these sources cannot be loaded, the report says so and still shows the rest.
+   - Header: centre, Kendra ID, place, address, period dates, generated date.
+3. **Export Report** produces an A4 **PDF** with the same sections (`hcl-sathee-<centre>-<period>-report-<date>.pdf`). A dialog lets the Admin include a **Sathee Mitra** list (name, email, phone) and/or a **Sathee Vishist** list.
 
 ---
 
