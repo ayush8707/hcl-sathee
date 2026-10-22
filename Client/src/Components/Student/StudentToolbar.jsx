@@ -1,123 +1,80 @@
-import { Search, UserPlus, ChevronDown, FileSpreadsheet } from "lucide-react";
+import { Search, UserPlus, FileSpreadsheet } from "lucide-react";
+import { COURSE_OPTIONS } from "../../utils/courseStyles";
 
-const COURSE_OPTIONS = ["JEE", "NEET", "SSC", "CLAT", "IBPS", "ICAR", "CUET", "RRB"];
+const controlClass =
+  "h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
 
 export default function StudentToolbar({
   search,
   onSearch,
   courseFilter,
   onCourseChange,
+  sortBy,
+  onSortByChange,
+  sortDirection,
+  onSortDirectionChange,
   onAddStudent,
   onImportStudents,
   readOnly = false,
 }) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "16px 20px",
-      borderBottom: "1px solid #e2e8f0",
-      flexWrap: "wrap",
-      background: "#fff",
-    }}>
-      <div style={{ position: "relative", flex: "1 1 260px", minWidth: 200 }}>
-        <Search size={15} color="#94a3b8" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+    <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4 sm:px-5">
+      <div className="relative min-w-[220px] flex-1">
+        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
-          type="text"
-          placeholder="Search by student name, Centre or Course..."
+          type="search"
+          placeholder="Search name, student ID, email or phone…"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          style={{
-            width: "100%",
-            paddingLeft: 36,
-            paddingRight: 12,
-            paddingTop: 9,
-            paddingBottom: 9,
-            borderRadius: 8,
-            border: "1px solid #e2e8f0",
-            background: "#f8fafc",
-            fontSize: 13,
-            color: "#000000",
-            outline: "none",
-          }}
+          className={`${controlClass} w-full pl-9`}
+          aria-label="Search students"
         />
       </div>
 
-      <div style={{ position: "relative" }}>
-        <select
-          value={courseFilter}
-          onChange={(e) => onCourseChange(e.target.value)}
-          style={{
-            appearance: "none",
-            padding: "9px 32px 9px 12px",
-            borderRadius: 8,
-            border: "1px solid #e2e8f0",
-            background: "#f8fafc",
-            fontSize: 13,
-            color: "#000000",
-            cursor: "pointer",
-          }}
-        >
-          <option>All Courses</option>
-          {COURSE_OPTIONS.map((course) => (
-            <option key={course}>{course}</option>
-          ))}
-        </select>
-        <ChevronDown
-          size={14}
-          color="#94a3b8"
-          style={{
-            position: "absolute",
-            right: 10,
-            top: "50%",
-            transform: "translateY(-50%)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
+      <select
+        value={courseFilter}
+        onChange={(e) => onCourseChange(e.target.value)}
+        className={controlClass}
+        aria-label="Filter by course"
+      >
+        <option>All Courses</option>
+        {COURSE_OPTIONS.map((course) => (
+          <option key={course}>{course}</option>
+        ))}
+      </select>
+
+      <select
+        value={`${sortBy}:${sortDirection}`}
+        onChange={(e) => {
+          const [by, direction] = e.target.value.split(":");
+          onSortByChange(by);
+          onSortDirectionChange(direction);
+        }}
+        className={controlClass}
+        aria-label="Sort students"
+      >
+        <option value="name:asc">Name (A–Z)</option>
+        <option value="name:desc">Name (Z–A)</option>
+        <option value="date:desc">Newest first</option>
+        <option value="date:asc">Oldest first</option>
+      </select>
 
       {!readOnly ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+        <div className="flex items-center gap-2 sm:ml-auto">
           <button
             type="button"
             onClick={onImportStudents}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "9px 16px",
-              borderRadius: 8,
-              border: "1px solid #bfdbfe",
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50"
           >
-            <FileSpreadsheet size={15} />
-            Import Data
+            <FileSpreadsheet size={16} />
+            Import
           </button>
-
           <button
             type="button"
             onClick={onAddStudent}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "9px 16px",
-              borderRadius: 8,
-              border: "none",
-              background: "linear-gradient(135deg,#1e40af,#3b82f6)",
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#3B82F6] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600"
           >
-            <UserPlus size={15} />
+            <UserPlus size={16} />
             Add Student
           </button>
         </div>
