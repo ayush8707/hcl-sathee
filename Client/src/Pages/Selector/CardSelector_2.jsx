@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { MapPin, ArrowRight, ShieldAlert, Plus, Pencil, Trash2 } from "lucide-react";
+import { MapPin, ArrowRight, ArrowLeft, ShieldAlert, Plus, Pencil, Trash2, Lock, LogOut } from "lucide-react";
+import HCLLogo from "../../assets/HCL.svg";
 import AddCentreModal from "../../Components/Selector/AddCentreModal";
 import {
   fetchCentres,
@@ -15,7 +16,7 @@ import {
   getCanonicalCentreKey,
   PORTAL_OPTIONS,
 } from "../../utils/portalMapping";
-import { getCentreId } from "../../utils/centreDirectory";
+import { getCentreId, getCentrePlace } from "../../utils/centreDirectory";
 
 // The 3 originals are already rendered from PORTAL_OPTIONS with their own
 // titles/subtitles — filter them out of the dynamic list so they show once.
@@ -23,7 +24,23 @@ const DEFAULT_CENTRE_KEYS = new Set(
   PORTAL_OPTIONS.map((option) => getCanonicalCentreKey(option.title))
 );
 
-export default function CardSelector_2({ openDashboard, userCentre, userRole }) {
+// "HCL SATHEE RAJASTHAN" -> "Rajasthan" for the card heading.
+const PORTAL_PREFIX = /^HCL\s+SATHEE\s+/i;
+const toTitleCase = (value) =>
+  value.toLowerCase().replace(/\b([a-z])/g, (match) => match.toUpperCase());
+const cardHeading = (title) =>
+  PORTAL_PREFIX.test(title) ? toTitleCase(title.replace(PORTAL_PREFIX, "")) : title;
+
+function Alert({ children }) {
+  return (
+    <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-sm text-red-700">
+      <ShieldAlert size={20} className="shrink-0" />
+      <p className="font-medium">{children}</p>
+    </div>
+  );
+}
+
+export default function CardSelector_2({ openDashboard, onBack, onLogout, userCentre, userRole }) {
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
   const [accessMessage, setAccessMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,7 +72,7 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
 
   const handleOpenPortal = (portalTitle) => {
     if (!canAccessPortal(userCentre, portalTitle, userRole)) {
-      setAccessMessage("ACCESS DENIED");
+      setAccessMessage("You don't have access to this portal. Ask your admin if you need it.");
       return;
     }
 
@@ -69,7 +86,7 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
       return;
     }
 
-    setAccessMessage("ACCESS DENIED");
+    setAccessMessage("You don't have access to this portal. Ask your admin if you need it.");
   };
 
   const openAddModal = () => {
@@ -144,97 +161,152 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
   ];
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] text-white flex flex-col">
-      <div className="px-10 py-8">
-        <h1 className="text-4xl text-black font-bold">Select Your State Portal</h1>
-        <p className="mt-2 text-black">
-          Choose the HCL SATHEE portal you want to manage.
-        </p>
-      </div>
-
-      {accessMessage && (
-        <div className="mx-10 mb-2 flex items-center gap-3 rounded-2xl border border-red-300 bg-red-50 px-5 py-4 text-red-700">
-          <ShieldAlert size={22} className="shrink-0" />
-          <p className="text-sm font-bold tracking-wide">{accessMessage}</p>
+    <div className="min-h-screen w-full flex flex-col bg-[#F1F5F9] font-sans text-black">
+      <header className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 border-b border-[#3B82F6]/20 bg-[#5785d0]">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <img src={HCLLogo} alt="HCL Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0" />
+          <div className="min-w-0">
+            <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">HCL SATHEE</p>
+            <p className="text-xs text-[#101011] truncate">State Portals</p>
+          </div>
         </div>
-      )}
 
-      {actionError && (
-        <div className="mx-10 mb-2 flex items-center gap-3 rounded-2xl border border-red-300 bg-red-50 px-5 py-4 text-red-700">
-          <ShieldAlert size={22} className="shrink-0" />
-          <p className="text-sm font-bold tracking-wide">{actionError}</p>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="bg-white/20 hover:bg-white/30 text-slate-900 px-3 sm:px-5 py-2 rounded-2xl text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <ArrowLeft size={18} />
+              <span className="hidden sm:inline">Platforms</span>
+            </button>
+          ) : null}
+          {onLogout ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="bg-[#3B82F6] hover:bg-blue-600 text-white px-3 sm:px-6 py-2 rounded-2xl text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <LogOut size={18} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          ) : null}
         </div>
-      )}
+      </header>
 
-      <div className="flex-1 flex items-center justify-center px-6 pb-10 text-black">
-        <div className="grid w-full max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Select Your State Portal</h1>
+            <p className="mt-2 text-slate-600">Choose the HCL SATHEE portal you want to manage.</p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-600 shadow-sm">
+            {centreCards.length} {centreCards.length === 1 ? "portal" : "portals"}
+          </span>
+        </div>
+
+        {accessMessage ? <Alert>{accessMessage}</Alert> : null}
+        {actionError ? <Alert>{actionError}</Alert> : null}
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {centreCards.map((state) => {
             const allowed = canAccessPortal(userCentre, state.title, userRole);
             const custom = state.custom;
+            const kendraId = getCentreId(state.title);
+            const place = getCentrePlace(state.title);
+            const isPrefixed = PORTAL_PREFIX.test(state.title);
 
             return (
-              <div key={state.title} className="relative">
-              {isAdmin && custom ? (
-                <div className="absolute right-4 top-4 z-10 flex gap-1.5">
-                  <button
-                    type="button"
-                    title="Rename centre"
-                    onClick={() => openRenameModal(custom)}
-                    className="rounded-full bg-white/90 p-1.5 text-slate-500 shadow-sm hover:bg-white hover:text-blue-600"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    title="Delete centre"
-                    onClick={() => handleDeleteCentre(custom)}
-                    className="rounded-full bg-white/90 p-1.5 text-slate-500 shadow-sm hover:bg-white hover:text-red-600"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ) : null}
-              <button
-                type="button"
+              <article
+                key={state.title}
                 onClick={() => handleOpenPortal(state.title)}
-                className={`group relative w-full rounded-3xl border p-8 text-left shadow-xl transition-all duration-300 hover:-translate-y-2 ${
+                className={`group flex min-w-0 cursor-pointer flex-col rounded-2xl border bg-white shadow-sm transition duration-200 ${
                   allowed
-                    ? "border-slate-700 bg-[#F1F5F9] hover:border-blue-500 hover:shadow-blue-500/20"
-                    : "border-slate-300 bg-slate-100 opacity-80 hover:border-red-400 hover:shadow-red-500/10"
+                    ? "border-slate-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+                    : "border-slate-200 opacity-75"
                 }`}
               >
-                <div
-                  className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${
-                    allowed
-                      ? "bg-blue-600/20 text-blue-400"
-                      : "bg-red-500/10 text-red-500"
-                  }`}
-                >
-                  {allowed ? <MapPin size={30} /> : <ShieldAlert size={30} />}
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                        allowed ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {allowed ? <MapPin size={24} /> : <Lock size={22} />}
+                    </div>
+                    {kendraId ? (
+                      <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-semibold text-slate-600">
+                        {kendraId}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {isPrefixed ? (
+                    <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-blue-600">HCL SATHEE</p>
+                  ) : null}
+                  <h2 className={`${isPrefixed ? "mt-1" : "mt-5"} break-words text-2xl font-bold tracking-tight text-slate-900`}>
+                    {cardHeading(state.title)}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">{state.subtitle}</p>
+
+                  {place ? (
+                    <p className="mt-3 flex items-center gap-1.5 text-sm text-slate-500">
+                      <MapPin size={14} className="shrink-0" />
+                      {place}
+                    </p>
+                  ) : null}
                 </div>
 
-                <h2 className="text-2xl font-bold leading-snug text-black">
-                  {state.title}
-                </h2>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Kendra ID: {getCentreId(state.title) ?? "—"}
-                </p>
+                <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-6 py-4">
+                  {allowed ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenPortal(state.title);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                    >
+                      Open portal
+                      <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500">
+                      <Lock size={15} />
+                      No access
+                    </span>
+                  )}
 
-                <p className="mt-3 text-black text-bold">{state.subtitle}</p>
-
-                <div
-                  className={`mt-8 flex items-center gap-2 font-medium ${
-                    allowed ? "text-blue-400" : "text-red-500"
-                  }`}
-                >
-                  {allowed ? "Open Portal" : "Restricted"}
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
+                  {isAdmin && custom ? (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        title="Rename centre"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRenameModal(custom);
+                        }}
+                        className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-blue-600"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Delete centre"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCentre(custom);
+                        }}
+                        className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-              </button>
-              </div>
+              </article>
             );
           })}
 
@@ -242,35 +314,21 @@ export default function CardSelector_2({ openDashboard, userCentre, userRole }) 
             <button
               type="button"
               onClick={openAddModal}
-              className="group rounded-3xl border-2 border-dashed border-slate-400 bg-slate-50 p-8 text-left shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-blue-500 hover:shadow-blue-500/20"
+              className="group flex min-h-[240px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white/60 p-6 text-center transition hover:border-blue-400 hover:bg-white"
             >
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600/20 text-blue-400">
-                <Plus size={30} />
-              </div>
-
-              <h2 className="text-2xl font-bold leading-snug text-black">
-                ADD NEW CENTRE
-              </h2>
-
-              <p className="mt-3 text-black text-bold">
-                Add a new centre
-              </p>
-
-              <div className="mt-8 flex items-center gap-2 font-medium text-blue-400">
-                Add New Centre
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
-              </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-transform group-hover:scale-110">
+                <Plus size={24} />
+              </span>
+              <span className="mt-4 text-lg font-semibold text-slate-900">Add new centre</span>
+              <span className="mt-1 text-sm text-slate-500">Create a portal for a new SATHEE Kendra</span>
             </button>
           ) : null}
         </div>
-      </div>
+      </main>
 
-      <div className="pb-6">
+      <footer className="pb-6">
         <p className="text-center text-sm text-slate-500">HCL SATHEE Platform</p>
-      </div>
+      </footer>
 
       {isAdmin ? (
         <AddCentreModal

@@ -421,6 +421,8 @@ const AppContent = () => {
           path="/portals"
           element={
             <CardSelector_2
+              onBack={() => navigate("/")}
+              onLogout={handleLogout}
               userCentre={userCentre}
               userRole={userRole}
               openDashboard={(name) => {
