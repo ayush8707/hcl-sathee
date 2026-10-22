@@ -10,7 +10,12 @@ import {
   YAxis,
 } from "recharts";
 import { MainLayout } from "../../Components/MainLayout";
-import { fetchStudents } from "../../services/students";
+import { fetchAllStudents } from "../../services/students";
+import { fetchMitraAttendanceRange } from "../../services/mitraAttendance";
+import { fetchVishistAttendanceRange } from "../../services/vishistAttendance";
+import { fetchLeaveRequests } from "../../services/leaveRequests";
+import { fetchSupportQueries } from "../../services/supportQueries";
+import { fetchAnnouncements } from "../../services/announcements";
 import { fetchUsers } from "../../services/users";
 import { fetchAttendanceDetail } from "../../services/dailySubjectAttendance";
 import { fetchCourseTestMarks } from "../../services/testMarks";
@@ -27,35 +32,33 @@ import {
 } from "../../utils/courseSubjects";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { buildCentreReportPdf } from "../../utils/centreReportPdf";
+import {
+  PERIOD_TYPES,
+  academicLabel,
+  buildActivity,
+  buildMonthlyTrend,
+  buildOverview,
+  buildPeriod,
+  currentAcademicStart,
+  currentMonthValue,
+  recentYears,
+} from "../../utils/kendraReport";
+import {
+  ActivitySection,
+  EngagementSection,
+  SectionTitle,
+  SummarySection,
+  YearOverviewSection,
+} from "../../Components/Report/ReportSections";
 
 const COURSES = ["JEE", "NEET", "SSC", "CLAT", "IBPS", "RRB", "ICAR", "CUET"];
 
-const PERIOD_OPTIONS = [
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-];
 
 const toDateOnly = (date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
-};
-
-const getWeekRange = (date = new Date()) => {
-  const day = date.getDay(); // 0 = Sunday
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(date);
-  monday.setDate(date.getDate() + diffToMonday);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return { from: toDateOnly(monday), to: toDateOnly(sunday) };
-};
-
-const getMonthRange = (date = new Date()) => {
-  const first = new Date(date.getFullYear(), date.getMonth(), 1);
-  const last = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  return { from: toDateOnly(first), to: toDateOnly(last) };
 };
 
 const isSatheeMitraRoleUser = (user) =>
@@ -203,7 +206,9 @@ const buildAttendanceForCourse = (records, students, range) => {
   });
 
   const totalStudents = students.length;
-  const trend = enumerateDates(range.from, range.to).map((date) => ({
+  // Days after today have no attendance yet, so the trend stops at today.
+  const today = toDateOnly(new Date());
+  const trend = enumerateDates(range.from, range.to < today ? range.to : today).map((date) => ({
     label: date,
     percentage:
       totalStudents > 0
@@ -550,7 +555,10 @@ export default function CentreReport({
   onLogout,
   roleLabel,
 }) {
-  const [period, setPeriod] = useState("weekly");
+  const [periodType, setPeriodType] = useState("weekly");
+  const [month, setMonth] = useState(() => currentMonthValue());
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [academicStart, setAcademicStart] = useState(() => currentAcademicStart());
   const [selectedCourses, setSelectedCourses] = useState([...COURSES]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -576,32 +584,73 @@ export default function CentreReport({
     setLoading(true);
     setError("");
     try {
-      const range = period === "weekly" ? getWeekRange() : getMonthRange();
+      const period = buildPeriod({ type: periodType, month, year, academicStart });
+      const range = { from: period.from, to: period.to };
+      const isYear = period.groupBy === "month";
 
-      const [allStudents, attendanceRecords, ...courseTestData] = await Promise.all([
-        fetchStudents(),
+      // Attendance for this period and the previous one (for comparison);
+      // course marks come for all dates and are split by period below.
+      const [allStudents, attendanceRecords, prevAttendanceRecords, ...courseTestData] = await Promise.all([
+        fetchAllStudents(),
         fetchAttendanceDetail({ from: range.from, to: range.to, centre: portalName }),
-        ...selectedCourses.map((course) =>
-          fetchCourseTestMarks({ course, centre: portalName, from: range.from, to: range.to })
-        ),
+        fetchAttendanceDetail({ from: period.prev.from, to: period.prev.to, centre: portalName }),
+        ...selectedCourses.map((course) => fetchCourseTestMarks({ course, centre: portalName })),
       ]);
 
-      const centreStudents = allStudents.filter((s) => matchesPortalCentre(s.centre, portalName));
+      // Mentor and centre activity: a failure here should not stop the report.
+      const activityLabels = ["mentor accounts", "Sathee Mitra attendance", "Vishist sessions", "leave requests", "queries", "announcements"];
+      const activityResults = await Promise.allSettled([
+        fetchUsers(),
+        fetchMitraAttendanceRange(range.from, range.to),
+        fetchVishistAttendanceRange(range.from, range.to, portalName),
+        fetchLeaveRequests(),
+        fetchSupportQueries(),
+        fetchAnnouncements(),
+      ]);
+      const [users, mitraRecords, vishistRecords, leaves, queries, announcements] = activityResults.map((r) =>
+        r.status === "fulfilled" ? r.value : []
+      );
+      const unavailable = activityLabels.filter((_, idx) => activityResults[idx].status === "rejected");
 
+      const centreStudents = allStudents
+        .filter((s) => matchesPortalCentre(s.centre, portalName))
+        .map((s) => ({ ...s, courseCode: normalizeCourseCode(s.course) }))
+        .filter((s) => selectedCourses.includes(s.courseCode));
+
+      const inPeriod = (date) => Boolean(date) && date >= range.from && date <= range.to;
       const performanceByCourse = {};
       const attendanceByCourse = {};
       selectedCourses.forEach((course, index) => {
-        const courseStudents = centreStudents.filter(
-          (s) => normalizeCourseCode(s.course) === course
-        );
+        const courseStudents = centreStudents.filter((s) => s.courseCode === course);
+        const periodTests = courseTestData[index].tests.filter((t) => inPeriod(t.testDate));
+        const periodTestIds = new Set(periodTests.map((t) => String(t.id)));
         performanceByCourse[course] = buildPerformanceForCourse({
           course,
           students: courseStudents,
-          tests: courseTestData[index].tests,
-          marks: courseTestData[index].marks,
-          period,
+          tests: periodTests,
+          marks: courseTestData[index].marks.filter((m) => periodTestIds.has(String(m.testId))),
+          period: periodType,
         });
-        attendanceByCourse[course] = buildAttendanceForCourse(attendanceRecords, courseStudents, range);
+        attendanceByCourse[course] = isYear
+          ? { rows: [], trend: [] }
+          : buildAttendanceForCourse(attendanceRecords, courseStudents, range);
+      });
+
+      const allRecords = [...attendanceRecords, ...prevAttendanceRecords];
+      const overview = buildOverview({ students: centreStudents, records: allRecords, courseTests: courseTestData, period });
+      const monthlyTrend = isYear
+        ? buildMonthlyTrend({ students: centreStudents, records: attendanceRecords, courseTests: courseTestData, period })
+        : [];
+      const centreUsers = users.filter((u) => matchesPortalCentre(u.centre, portalName));
+      const activity = buildActivity({
+        users: centreUsers,
+        mitraRecords,
+        vishistRecords,
+        leaves,
+        queries,
+        announcements,
+        period,
+        matchesCentre: (centre) => matchesPortalCentre(centre, portalName),
       });
 
       // Render order is always canonical (JEE..CUET), never the order courses
@@ -609,14 +658,25 @@ export default function CentreReport({
       const orderedCourses = [...selectedCourses].sort(
         (a, b) => COURSES.indexOf(a) - COURSES.indexOf(b)
       );
+      // Courses without students get one line instead of empty charts/tables.
+      const studentCourses = new Set(centreStudents.map((s) => s.courseCode));
+      const activeCourses = orderedCourses.filter((course) => studentCourses.has(course));
+      const emptyCourses = orderedCourses.filter((course) => !studentCourses.has(course));
 
       setReport({
-        period,
-        courses: orderedCourses,
+        period: periodType,
+        periodInfo: period,
+        isYear,
+        courses: activeCourses,
+        emptyCourses,
         range,
         generatedAt: new Date(),
         performanceByCourse,
         attendanceByCourse,
+        overview,
+        monthlyTrend,
+        activity,
+        unavailable,
       });
     } catch (err) {
       console.error("Centre report error:", err);
@@ -663,6 +723,13 @@ export default function CentreReport({
           year: "numeric",
         }),
         periodLabel: report.period === "weekly" ? "Weekly" : "Monthly",
+        periodTitle: report.periodInfo.label,
+        rangeLabel: `${report.range.from} to ${report.range.to}`,
+        isYear: report.isYear,
+        summary: report.overview.summary,
+        overview: report.overview,
+        monthlyTrend: report.monthlyTrend,
+        activity: report.activity,
         courses: report.courses,
         performanceByCourse: report.performanceByCourse,
         attendanceByCourse: report.attendanceByCourse,
@@ -673,7 +740,8 @@ export default function CentreReport({
       });
 
       const slug = String(centreValue).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      doc.save(`hcl-sathee-${slug || "centre"}-${report.period}-report-${toDateOnly(new Date())}.pdf`);
+      const periodSlug = report.periodInfo.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      doc.save(`hcl-sathee-${slug || "centre"}-${periodSlug || report.period}-report-${toDateOnly(new Date())}.pdf`);
       setDownloadOpen(false);
     } catch (err) {
       console.error("Export report PDF error:", err);
@@ -705,22 +773,71 @@ export default function CentreReport({
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[160px]">
+            <div className="min-w-[180px]">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Period
               </label>
               <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
+                value={periodType}
+                onChange={(e) => setPeriodType(e.target.value)}
                 className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none"
               >
-                {PERIOD_OPTIONS.map((option) => (
+                {PERIOD_TYPES.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
             </div>
+
+            {periodType === "monthly" ? (
+              <div className="min-w-[170px]">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Month
+                </label>
+                <input
+                  type="month"
+                  value={month}
+                  max={currentMonthValue()}
+                  onChange={(e) => e.target.value && setMonth(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none"
+                />
+              </div>
+            ) : null}
+
+            {periodType === "yearly" ? (
+              <div className="min-w-[120px]">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Year
+                </label>
+                <select
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none"
+                >
+                  {recentYears().map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            {periodType === "academic" ? (
+              <div className="min-w-[140px]">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Academic year
+                </label>
+                <select
+                  value={academicStart}
+                  onChange={(e) => setAcademicStart(Number(e.target.value))}
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none"
+                >
+                  {recentYears(5, new Date(currentAcademicStart(), 6, 1)).map((y) => (
+                    <option key={y} value={y}>{academicLabel(y)}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
             <div className="min-w-[220px]">
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -737,7 +854,8 @@ export default function CentreReport({
             >
               {loading ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 size={15} className="animate-spin" /> Generating…
+                  <Loader2 size={15} className="animate-spin" />
+                  {periodType === "yearly" || periodType === "academic" ? "Generating (year reports take a little longer)…" : "Generating…"}
                 </span>
               ) : (
                 "Go"
@@ -777,8 +895,11 @@ export default function CentreReport({
             </div>
 
             <h2 className="text-center text-xl font-bold uppercase tracking-wide text-slate-900">
-              {report.period} Report — {centreValue}
+              {report.periodInfo.label} Report — {centreValue}
             </h2>
+            <p className="mt-1 text-center text-sm text-slate-500">
+              {report.range.from} to {report.range.to}
+            </p>
 
             <div className="mt-6 flex flex-wrap items-start justify-between gap-6 border-b border-slate-200 pb-6">
               <div className="space-y-1 text-sm">
@@ -807,10 +928,24 @@ export default function CentreReport({
               </p>
             </div>
 
-            <section className="mt-8">
-              <h3 className="border-b-2 border-slate-200 pb-2 text-lg font-bold text-slate-900">
-                Performance
-              </h3>
+            <SummarySection summary={report.overview.summary} number={1} />
+
+            {report.isYear ? (
+              <YearOverviewSection
+                number={2}
+                trend={report.monthlyTrend}
+                perStudent={report.overview.perStudent}
+                courses={report.courses}
+              />
+            ) : (
+            <>
+            <section className="mt-10">
+              <SectionTitle number={2}>Performance</SectionTitle>
+              {report.emptyCourses.length ? (
+                <p className="mt-3 text-sm text-slate-500">
+                  No students enrolled in: {report.emptyCourses.join(", ")}.
+                </p>
+              ) : null}
               {report.courses.map((course) => (
                 <div key={course} className="mt-6">
                   <h4 className="text-base font-semibold text-blue-700">{course}</h4>
@@ -847,9 +982,12 @@ export default function CentreReport({
             </section>
 
             <section className="mt-10">
-              <h3 className="border-b-2 border-slate-200 pb-2 text-lg font-bold text-slate-900">
-                Attendance
-              </h3>
+              <SectionTitle number={3}>Attendance</SectionTitle>
+              {report.emptyCourses.length ? (
+                <p className="mt-3 text-sm text-slate-500">
+                  No students enrolled in: {report.emptyCourses.join(", ")}.
+                </p>
+              ) : null}
               {report.courses.map((course) => (
                 <div key={course} className="mt-6">
                   <h4 className="text-base font-semibold text-blue-700">{course}</h4>
@@ -862,6 +1000,11 @@ export default function CentreReport({
                 </div>
               ))}
             </section>
+            </>
+            )}
+
+            <EngagementSection overview={report.overview} number={report.isYear ? 3 : 4} />
+            <ActivitySection activity={report.activity} unavailable={report.unavailable} number={report.isYear ? 4 : 5} />
           </div>
         ) : null}
       </div>

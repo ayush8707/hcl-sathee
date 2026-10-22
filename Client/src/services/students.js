@@ -30,6 +30,19 @@ export const fetchStudents = async () => {
   return (response.data.students ?? []).map(parseStudent);
 };
 
+// Every student, following the server's pages (it returns 200 at a time).
+export const fetchAllStudents = async () => {
+  const students = [];
+  let cursor;
+  for (let page = 0; page < 100; page += 1) {
+    const response = await api.get("/api/students", { params: cursor ? { cursor } : {} });
+    students.push(...(response.data.students ?? []).map(parseStudent));
+    cursor = response.data.nextCursor;
+    if (!cursor) break;
+  }
+  return students;
+};
+
 export const createStudent = async (payload) => {
   const response = await api.post("/api/students", payload);
   return parseStudent(response.data.student);

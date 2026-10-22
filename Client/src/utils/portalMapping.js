@@ -4,9 +4,9 @@ const CENTRE_RULES = [
   { patterns: ["MADHYAPRADESH"], key: "HCLMADHYAPRADESH", label: "HCL MADHYA PRADESH" },
 ];
 
-const normalizeCentreValue = (value = "") =>
-  value
-    .toString()
+// Records without a centre (e.g. admin accounts) arrive as null.
+const normalizeCentreValue = (value) =>
+  String(value ?? "")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z]/g, "");
@@ -24,7 +24,7 @@ export const getCentreValueFromPortal = (portalName = "") => {
   if (rule) return rule.label;
   // Dynamically-added centres have no rule — the portal name is already the
   // centre value (e.g. "HCL UTTAR PRADESH").
-  const trimmed = portalName.toString().trim();
+  const trimmed = String(portalName ?? "").trim();
   return trimmed || null;
 };
 

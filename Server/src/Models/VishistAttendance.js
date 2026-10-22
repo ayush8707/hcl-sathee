@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { uploadToStorage } = require("../config/storage");
 const path = require("path");
 const { toDate } = require("../Utils/firestoreHelpers");
@@ -123,17 +123,15 @@ const findByDate = async (date, centre = null, status = null) => {
 };
 
 const findByDateRange = async (fromDate, toDateArg, centre = null, status = null) => {
-  let query = getSupabase()
-    .from(TABLE)
-    .select("*")
-    .gte("date", fromDate)
-    .lte("date", toDateArg)
-    .order("created_at", { ascending: false });
-  if (status) query = query.eq("status", status);
-
-  const { data, error } = await query;
-  assertNoError(error, "Failed to load vishist attendance");
-  let rows = (data || []).map(toApiRecord);
+  const data = await selectAllRows(() => {
+    let query = getSupabase().from(TABLE).select("*").gte("date", fromDate).lte("date", toDateArg);
+    if (status) query = query.eq("status", status);
+    return query;
+  }, "Failed to load vishist attendance");
+  // Newest first, as before.
+  let rows = data
+    .map(toApiRecord)
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   if (centre) {
     const { matchesCentre } = require("../Utils/centreMatch");
     rows = rows.filter((r) => matchesCentre(r.centre, centre));
