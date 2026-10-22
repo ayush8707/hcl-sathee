@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { BarChart3, BookOpen, GraduationCap, TrendingDown, Trophy, Users } from "lucide-react";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchTestTypeProgress } from "../../services/testMarks";
 import { matchesPortalCentre } from "../../utils/portalMapping";
@@ -49,36 +50,39 @@ const STATUS_PANEL = {
 
 const HIGHLIGHT_THEMES = {
   high: {
-    card: "bg-blue-50 border-blue-100",
-    iconWrap: "bg-blue-100",
-    label: "text-blue-500",
-    score: "text-blue-700",
-    suffix: "text-blue-500",
-    badge: "bg-blue-200 text-blue-800",
-    name: "text-blue-600",
-    meta: "text-blue-400",
-    courseLabel: "text-blue-500",
-    courseValue: "text-blue-700",
-    empty: "text-blue-500",
-    title: "Highest Student Marks",
-    icon: "🏆",
+    title: "Top performer",
+    Icon: Trophy,
+    iconWrap: "bg-emerald-100 text-emerald-600",
+    score: "text-emerald-600",
+    bar: "bg-emerald-500",
   },
   low: {
-    card: "bg-blue-50 border-blue-100",
-    iconWrap: "bg-red-100",
-    label: "text-red-500",
-    score: "text-red-600",
-    suffix: "text-red-400",
-    badge: "bg-red-100 text-red-700 border border-red-200",
-    name: "text-red-600",
-    meta: "text-red-600",
-    courseLabel: "text-red-500",
-    courseValue: "text-red-600",
-    empty: "text-red-500",
-    title: "Lowest Student Marks",
-    icon: "📉",
+    title: "Needs most support",
+    Icon: TrendingDown,
+    iconWrap: "bg-rose-100 text-rose-600",
+    score: "text-rose-600",
+    bar: "bg-rose-500",
   },
 };
+
+// Bar colour for a 0-100 score.
+const scoreBarClass = (value) =>
+  value >= 75 ? "bg-emerald-500" : value >= 50 ? "bg-blue-500" : value >= 35 ? "bg-amber-500" : "bg-rose-500";
+
+function SummaryTile({ icon: Icon, label, value, hint, tone }) {
+  return (
+    <div className="flex min-w-0 items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon size={22} />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+        {hint ? <p className="truncate text-xs text-slate-500">{hint}</p> : null}
+      </div>
+    </div>
+  );
+}
 
 function StatusPanel({ kind, message }) {
   if (kind === "error") {
@@ -95,40 +99,46 @@ function StatusPanel({ kind, message }) {
 
 function StudentHighlightCard({ theme, entry }) {
   const t = HIGHLIGHT_THEMES[theme];
+  const score = entry ? round1(entry.avg) : null;
 
   return (
-    <div className={`${t.card} rounded-2xl p-6 shadow-sm border flex gap-5`}>
-      <div className={`flex-shrink-0 w-14 h-14 rounded-xl ${t.iconWrap} flex items-center justify-center text-2xl`}>
-        {t.icon}
+    <div className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${t.iconWrap}`}>
+          <t.Icon size={20} />
+        </span>
+        <p className="text-sm font-semibold text-slate-700">{t.title}</p>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className={`text-xs font-semibold ${t.label} uppercase tracking-wider mb-2`}>
-          {t.title}
+
+      {entry ? (
+        <>
+          <div className="mt-5 flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="truncate text-xl font-bold text-slate-900">{entry.student.name}</p>
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-xs font-semibold text-slate-600">
+                  {entry.student.studentId || "—"}
+                </span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                  {entry.student.course || "—"}
+                </span>
+              </p>
+            </div>
+            <p className={`shrink-0 text-4xl font-extrabold tracking-tight ${t.score}`}>
+              {score}
+              <span className="text-lg font-semibold text-slate-400">%</span>
+            </p>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className={`h-full rounded-full ${t.bar}`} style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Average across all recorded tests</p>
+        </>
+      ) : (
+        <p className="mt-5 rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+          No marks recorded yet. This fills in once test marks are entered.
         </p>
-        {entry ? (
-          <>
-            <div className="flex items-end gap-3 mb-3">
-              <span className={`text-4xl font-extrabold ${t.score}`}>{round1(entry.avg)}</span>
-              <span className={`text-lg font-semibold ${t.suffix} mb-1`}>/ 100</span>
-              <span className={`ml-auto text-sm font-semibold ${t.badge} px-2.5 py-0.5 rounded-full`}>
-                {round1(entry.avg)}%
-              </span>
-            </div>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className={`${t.name} font-medium`}>{entry.student.name}</span>
-                <span className={`${t.meta} text-xs`}>{entry.student.studentId || "—"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className={t.courseLabel}>Course</span>
-                <span className={`${t.courseValue} font-semibold`}>{entry.student.course || "—"}</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className={`text-sm ${t.empty}`}>No marks recorded yet.</p>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -539,7 +549,7 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
       });
   }, [availableStudents, individualReady, individualTestType, selectedStudentIds, submittedIndividualQuery]);
 
-  const { courseRows, highestStudent, lowestStudent } = useMemo(() => {
+  const { courseRows, highestStudent, lowestStudent, centreAverage, totalStudents } = useMemo(() => {
     const centreStudentsAvailable = centreStudents;
 
     const studentsWithScores = centreStudentsAvailable
@@ -549,7 +559,10 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
       })
       .filter((entry) => entry.avg != null);
 
-    const rankedByAvg = [...studentsWithScores].sort((a, b) => b.avg - a.avg);
+    // New students start with marks of 0, so an all-zero centre has no real
+    // results yet.
+    const hasRealMarks = studentsWithScores.some((entry) => entry.avg > 0);
+    const rankedByAvg = hasRealMarks ? [...studentsWithScores].sort((a, b) => b.avg - a.avg) : [];
 
     const byCourse = new Map();
     for (const student of centreStudentsAvailable) {
@@ -565,13 +578,15 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
           .map((student) => average(getStudentProgressRates(student)))
           .filter((value) => value != null);
 
-        const avg = average(allScores);
-        const highestMark = allScores.length ? Math.max(...allScores) : null;
-        const lowestMark = allScores.length ? Math.min(...allScores) : null;
+        const scored = allScores.some((value) => value > 0);
+        const avg = scored ? average(allScores) : null;
+        const highestMark = scored ? Math.max(...allScores) : null;
+        const lowestMark = scored ? Math.min(...allScores) : null;
 
         return {
           Course: course,
           students: courseStudents.length,
+          avgValue: avg == null ? null : round1(avg),
           avg: avg == null ? "—" : round1(avg),
           highest: highestMark == null ? "—" : round1(highestMark),
           lowest: lowestMark == null ? "—" : round1(lowestMark),
@@ -582,7 +597,9 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
     return {
       courseRows: rows,
       highestStudent: rankedByAvg[0] || null,
-      lowestStudent: rankedByAvg[rankedByAvg.length - 1] || null,
+      lowestStudent: rankedByAvg.length > 1 ? rankedByAvg[rankedByAvg.length - 1] : null,
+      centreAverage: hasRealMarks ? round1(average(studentsWithScores.map((entry) => entry.avg))) : null,
+      totalStudents: centreStudentsAvailable.length,
     };
   }, [students, portalName]);
 
@@ -592,13 +609,13 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Students</h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-slate-900">Students</h2>
         <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setAnalyticsMode("overall")}
-            className={`rounded-lg px-5 py-2 text-sm font-medium transition ${analyticsMode === "overall" ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}
+            className={`rounded-lg px-5 py-2 text-sm font-medium transition ${analyticsMode === "overall" ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
           >
             Overall
           </button>
@@ -614,15 +631,27 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
 
       {analyticsMode === "overall" ? (
         <>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <SummaryTile icon={Users} label="Students" value={totalStudents} hint="In this centre" tone="bg-blue-100 text-blue-600" />
+            <SummaryTile icon={BookOpen} label="Courses" value={courseRows.length} hint="With enrolled students" tone="bg-violet-100 text-violet-600" />
+            <SummaryTile
+              icon={BarChart3}
+              label="Centre average"
+              value={centreAverage == null ? "—" : `${centreAverage}%`}
+              hint={centreAverage == null ? "No marks recorded yet" : "Across all recorded tests"}
+              tone="bg-emerald-100 text-emerald-600"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <StudentHighlightCard theme="high" entry={highestStudent} />
             <StudentHighlightCard theme="low" entry={lowestStudent} />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100">
-              <h2 className="text-base font-bold text-gray-900">Overall Centre Progress</h2>
-              <p className="text-sm text-gray-500 mt-0.5">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-900">Overall Centre Progress</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
                 Performance summary across all streams for this centre
               </p>
             </div>
@@ -630,18 +659,18 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={tableHeadRowClass}>
-                    <SerialNoHeader className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase" />
+                    <SerialNoHeader className="text-left px-6 py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase" />
                     {[
                       ["Course", "text-left px-6"],
-                      ["Students Count", "text-center px-4"],
-                      ["Avg", "text-center px-4"],
+                      ["Students", "text-center px-4"],
+                      ["Average", "text-left px-4"],
                       ["Highest", "text-center px-4"],
                       ["Lowest", "text-center px-4"],
                       ["View Graph", "text-center px-6"],
                     ].map(([label, alignPad]) => (
                       <th
                         key={label}
-                        className={`${alignPad} py-3.5 text-xs font-semibold text-gray-700 uppercase`}
+                        className={`${alignPad} py-3 text-xs font-semibold tracking-wide text-slate-500 uppercase`}
                       >
                         {label}
                       </th>
@@ -650,16 +679,42 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
                 </thead>
                 <tbody>
                   {courseRows.map((row, i) => (
-                    <tr key={row.Course} className={zebraRowClass(i)}>
+                    <tr key={row.Course} className={`border-t border-slate-100 ${zebraRowClass(i)}`}>
                       <SerialNoCell
                         index={i}
                         className="px-6 py-4 text-gray-500 font-medium tabular-nums"
                       />
-                      <td className="px-6 py-4 font-semibold text-gray-900">{row.Course}</td>
-                      <td className="px-4 py-4 text-center font-semibold text-gray-800">👤 {row.students}</td>
-                      <td className="px-4 py-4 text-center text-gray-700">{row.avg}</td>
-                      <td className="px-4 py-4 text-center font-medium text-green-700">{row.highest}</td>
-                      <td className="px-4 py-4 text-center font-medium text-red-600">{row.lowest}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-2 font-semibold text-slate-900">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <GraduationCap size={16} />
+                          </span>
+                          {row.Course}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                          <Users size={12} />
+                          {row.students}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {row.avgValue == null ? (
+                          <span className="text-xs text-slate-400">No marks yet</span>
+                        ) : (
+                          <div className="flex min-w-[120px] items-center gap-2">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className={`h-full rounded-full ${scoreBarClass(row.avgValue)}`}
+                                style={{ width: `${Math.min(100, row.avgValue)}%` }}
+                              />
+                            </div>
+                            <span className="w-12 text-right text-sm font-semibold tabular-nums text-slate-800">{row.avg}%</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className={`px-4 py-4 text-center font-semibold tabular-nums ${row.highest === "—" ? "text-slate-300" : "text-emerald-600"}`}>{row.highest === "—" ? "—" : `${row.highest}%`}</td>
+                      <td className={`px-4 py-4 text-center font-semibold tabular-nums ${row.lowest === "—" ? "text-slate-300" : "text-rose-600"}`}>{row.lowest === "—" ? "—" : `${row.lowest}%`}</td>
                       <td className="px-6 py-4 text-center">
                         <select
                           value={selectedTestTypes[row.Course] || ""}
@@ -674,9 +729,9 @@ export default function StudentsTab({ portalName, isCustomCentre = false }) {
                               setActiveGraph({ course: row.Course, type: nextValue });
                             }
                           }}
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                          className="px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 bg-white hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         >
-                          <option value="">Select Type</option>
+                          <option value="">View graph…</option>
                           {TEST_TYPE_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}

@@ -198,10 +198,10 @@ export default function AdminAnalytics({
       onLogout={onLogout}
       roleLabel={roleLabel}
     >
-      <main className="min-h-screen overflow-y-auto p-8 bg-gray-50" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
+      <main className="min-h-screen overflow-y-auto p-4 sm:p-8 bg-slate-50" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif" }}>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Analytics &amp; Progress</h1>
-          <p className="text-sm text-gray-500">Monitor student performance and centre activity</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">Analytics &amp; Progress</h1>
+          <p className="text-slate-500">Monitor student performance and centre activity</p>
         </div>
 
         <div className="mb-8">

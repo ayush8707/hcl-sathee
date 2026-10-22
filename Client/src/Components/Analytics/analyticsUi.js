@@ -20,7 +20,7 @@ export const mentorInitial = (name = "") => {
   return parts.length ? parts[parts.length - 1][0].toUpperCase() : "?";
 };
 
-export const tableHeadRowClass = { backgroundColor: "#CCD2DD" };
+export const tableHeadRowClass = { backgroundColor: "#F8FAFC" };
 
 export const zebraRowClass = (i) =>
   `hover:bg-blue-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`;
