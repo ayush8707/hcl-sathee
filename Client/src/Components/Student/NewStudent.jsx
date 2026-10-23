@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { UserPlus, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, Check, Info, Lock, UserPlus, X } from "lucide-react";
 import { getCentreValueFromPortal } from "../../utils/portalMapping";
+import { getCentreId } from "../../utils/centreDirectory";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
+import { courseTone } from "../../utils/courseStyles";
 import {
   buildMarksAndAttendance,
   getCourseSubjectConfig,
@@ -15,6 +17,12 @@ import {
 
 const courses = ["JEE", "NEET", "CLAT", "SSC", "IBPS", "RRB", "ICAR", "CUET"];
 const casteCategories = ["General", "OBC", "SC", "ST", "EWS"];
+const genders = ["Male", "Female", "Other"];
+
+const inputBase =
+  "w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:outline-none focus:ring-4";
+const inputClass = `${inputBase} border-slate-300 focus:border-blue-500 focus:ring-blue-100`;
+const invalidClass = `${inputBase} border-red-400 focus:border-red-500 focus:ring-red-100`;
 
 const createEmptyForm = (centre) => ({
   studentId: "",
@@ -36,18 +44,15 @@ const createEmptyForm = (centre) => ({
 
 export default function NewStudent({ open, onClose, onSubmit, error, submitting, portalName }) {
   const defaultCentre = getCentreValueFromPortal(portalName) || "HCL RAJASTHAN";
+  const kendraId = getCentreId(portalName);
   const [form, setForm] = useState(() => createEmptyForm(defaultCentre));
   const [choiceSubjects, setChoiceSubjects] = useState([]);
   const [subjectError, setSubjectError] = useState("");
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   useEscapeToClose(onClose, open);
 
   const subjectConfig = useMemo(() => getCourseSubjectConfig(form.course), [form.course]);
-
-  useEffect(() => {
-    setChoiceSubjects([]);
-    setSubjectError("");
-  }, [form.course]);
 
   const selectedSubjects = useMemo(() => {
     if (!subjectConfig) return [];
@@ -61,7 +66,14 @@ export default function NewStudent({ open, onClose, onSubmit, error, submitting,
 
   if (!open) return null;
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+    if (field === "course" && value !== form.course) {
+      setChoiceSubjects([]);
+      setSubjectError("");
+    }
+  };
 
   const toggleChoiceSubject = (subject) => {
     if (!subjectConfig || subjectConfig.choiceMode === "none") return;
@@ -91,16 +103,25 @@ export default function NewStudent({ open, onClose, onSubmit, error, submitting,
     });
   };
 
+  const validate = () => {
+    const errors = {};
+    if (!form.firstName.trim()) errors.firstName = "First name is required";
+    if (!form.email.trim()) errors.email = "Email is required";
+    else if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errors.email = "Enter a valid email address";
+    if (!isValidPhone10(form.phone)) errors.phone = "Enter a 10-digit mobile number";
+    if (!isOptionalPhone10(form.fatherPhone)) errors.fatherPhone = "Must be 10 digits or left blank";
+    if (!isOptionalPhone10(form.motherPhone)) errors.motherPhone = "Must be 10 digits or left blank";
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
 
-    if (!isValidPhone10(form.phone)) {
-      setFormError("Student phone number must be exactly 10 digits");
-      return;
-    }
-    if (!isOptionalPhone10(form.fatherPhone) || !isOptionalPhone10(form.motherPhone)) {
-      setFormError("Parent phone numbers must be exactly 10 digits (or left blank)");
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setFormError("Please fix the highlighted fields.");
       return;
     }
 
@@ -125,421 +146,279 @@ export default function NewStudent({ open, onClose, onSubmit, error, submitting,
     setChoiceSubjects([]);
     setSubjectError("");
     setFormError("");
+    setFieldErrors({});
     onClose();
   };
 
+  const bannerError = error || formError;
+
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15,23,42,.45)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 9999,
-        padding: 20,
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:p-6"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        style={{
-          width: "100%",
-          maxWidth: 900,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          background: "#fff",
-          borderRadius: 18,
-          boxShadow: "0 25px 60px rgba(0,0,0,.25)",
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-student-title"
+        className="flex h-full w-full max-w-3xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[92vh] sm:rounded-2xl"
       >
-        <div
-          style={{
-            padding: "28px 36px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            background: "linear-gradient(90deg,#eef2ff 0%,#4f6df5 100%)",
-          }}
-        >
-          <div style={{ display: "flex", gap: 18 }}>
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: 18,
-                background: "#dbeafe",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <UserPlus size={30} color="#1d4ed8" />
-            </div>
-
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <UserPlus size={20} />
+            </span>
             <div>
-              <h2 style={{ margin: 0, fontSize: 38, fontWeight: 700 }}>Add New Student</h2>
-              <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 18 }}>
-                Fill in the student details below
+              <h2 id="new-student-title" className="text-lg font-semibold text-slate-900">
+                Add new student
+              </h2>
+              <p className="text-sm text-slate-500">
+                Fields marked <span className="text-red-500">*</span> are required.
               </p>
             </div>
           </div>
-
           <button
+            type="button"
             onClick={onClose}
-            style={{ border: "none", background: "transparent", cursor: "pointer" }}
+            aria-label="Close"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
           >
-            <X size={30} color="#64748b" />
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="new-student-form" style={{ padding: 36 }}>
-          <FormStyles />
-          {error ? (
-            <div
-              style={{
-                marginBottom: 24,
-                padding: "16px 18px",
-                background: "#fee2e2",
-                color: "#991b1b",
-                borderRadius: 12,
-                border: "1px solid #fecaca",
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-          {formError ? (
-            <div
-              style={{
-                marginBottom: 24,
-                padding: "16px 18px",
-                background: "#fff7ed",
-                color: "#9a3412",
-                borderRadius: 12,
-                border: "1px solid #fed7aa",
-              }}
-            >
-              {formError}
-            </div>
-          ) : null}
+        <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-8 overflow-y-auto px-5 py-6 sm:px-7">
+            {bannerError ? (
+              <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                <span>{bannerError}</span>
+              </div>
+            ) : null}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 24,
-              marginBottom: 24,
-            }}
-          >
-            <Field
-              label="First Name"
-              value={form.firstName}
-              onChange={(v) => handleChange("firstName", v)}
-              placeholder="Enter first name"
-            />
-            <Field
-              label="Last Name"
-              value={form.lastName}
-              onChange={(v) => handleChange("lastName", v)}
-              placeholder="Enter last name"
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 24,
-              marginBottom: 24,
-            }}
-          >
-            <SelectField
-              label="Gender"
-              value={form.gender}
-              options={["Male", "Female", "Other"]}
-              onChange={(v) => handleChange("gender", v)}
-            />
-            <SelectField
-              label="Course Enrolled"
-              value={form.course}
-              options={courses}
-              onChange={(v) => handleChange("course", v)}
-            />
-          </div>
-
-          {subjectConfig ? (
-            <div style={{ marginBottom: 28 }}>
-              <SectionTitle>Subjects</SectionTitle>
-              <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: 14 }}>
-                {subjectConfig.hint}
-              </p>
-
-              <div style={{ marginBottom: 14 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#475569",
-                    marginBottom: 10,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.4,
-                  }}
-                >
-                  Compulsory
+            <Section step={1} title="Personal details" description="Basic information about the student.">
+              <Field
+                label="First name"
+                required
+                value={form.firstName}
+                onChange={(v) => handleChange("firstName", v)}
+                placeholder="e.g. Aarav"
+                error={fieldErrors.firstName}
+                autoComplete="given-name"
+              />
+              <Field
+                label="Last name"
+                value={form.lastName}
+                onChange={(v) => handleChange("lastName", v)}
+                placeholder="e.g. Sharma"
+                autoComplete="family-name"
+              />
+              <div>
+                <Label required>Gender</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {genders.map((g) => {
+                    const active = form.gender === g;
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => handleChange("gender", g)}
+                        aria-pressed={active}
+                        className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
+                          active
+                            ? "border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-100"
+                            : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {subjectConfig.compulsory.map((subject) => (
-                    <SubjectChip
-                      key={subject}
-                      label={subject}
-                      checked
-                      locked
-                    />
-                  ))}
+              </div>
+              <SelectField
+                label="Category"
+                value={form.category}
+                options={casteCategories}
+                onChange={(v) => handleChange("category", v)}
+              />
+            </Section>
+
+            <Section step={2} title="Course & subjects" description="Choose the batch the student is joining.">
+              <div className="sm:col-span-2">
+                <Label required>Course</Label>
+                <div className="flex flex-wrap gap-2">
+                  {courses.map((c) => {
+                    const active = form.course === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => handleChange("course", c)}
+                        aria-pressed={active}
+                        className={`rounded-full px-4 py-1.5 text-sm font-semibold ring-1 ring-inset transition ${
+                          active
+                            ? `${courseTone(c)} ring-2 shadow-sm`
+                            : "bg-white text-slate-600 ring-slate-300 hover:bg-slate-50"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {subjectConfig.choice.length > 0 ? (
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "#475569",
-                      marginBottom: 10,
-                      textTransform: "uppercase",
-                      letterSpacing: 0.4,
-                    }}
-                  >
-                    Choice{" "}
-                    <span style={{ fontWeight: 500, textTransform: "none", color: "#64748b" }}>
-                      ({choiceSubjects.length}
-                      {subjectConfig.choiceMode === "exactlyOne"
-                        ? "/1"
-                        : `/${subjectConfig.maxChoice}`}{" "}
-                      selected)
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                    {subjectConfig.choice.map((subject) => (
-                      <SubjectChip
+              {subjectConfig ? (
+                <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <p className="mb-3 text-sm text-slate-600">{subjectConfig.hint}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {subjectConfig.compulsory.map((subject) => (
+                      <span
                         key={subject}
-                        label={subject}
-                        checked={choiceSubjects.includes(subject)}
-                        onToggle={() => toggleChoiceSubject(subject)}
-                      />
+                        title="Compulsory subject"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700"
+                      >
+                        <Lock size={13} className="text-slate-400" />
+                        {subject}
+                      </span>
                     ))}
                   </div>
-                </div>
-              ) : null}
 
-              {subjectError ? (
-                <div
-                  style={{
-                    marginTop: 14,
-                    padding: "12px 14px",
-                    background: "#fff7ed",
-                    color: "#9a3412",
-                    borderRadius: 10,
-                    border: "1px solid #fed7aa",
-                    fontSize: 14,
-                  }}
-                >
-                  {subjectError}
+                  {subjectConfig.choice.length > 0 ? (
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Optional · {choiceSubjects.length}/
+                        {subjectConfig.choiceMode === "exactlyOne" ? 1 : subjectConfig.maxChoice} selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {subjectConfig.choice.map((subject) => {
+                          const active = choiceSubjects.includes(subject);
+                          return (
+                            <button
+                              key={subject}
+                              type="button"
+                              onClick={() => toggleChoiceSubject(subject)}
+                              aria-pressed={active}
+                              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                                active
+                                  ? "border-blue-500 bg-blue-600 text-white"
+                                  : "border-slate-300 bg-white text-slate-700 hover:border-blue-400"
+                              }`}
+                            >
+                              {active ? <Check size={14} /> : null}
+                              {subject}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {subjectError ? (
+                    <p className="mt-3 flex items-center gap-1.5 text-sm text-red-600">
+                      <AlertCircle size={15} /> {subjectError}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
+            </Section>
+
+            <Section step={3} title="Contact details" description="Used for notices and login invitations.">
+              <Field
+                label="Email address"
+                required
+                type="email"
+                value={form.email}
+                onChange={(v) => handleChange("email", v)}
+                placeholder="name@example.com"
+                error={fieldErrors.email}
+                autoComplete="email"
+              />
+              <PhoneField
+                label="Mobile number"
+                required
+                value={form.phone}
+                onChange={(v) => handleChange("phone", v)}
+                error={fieldErrors.phone}
+              />
+              <div className="sm:col-span-2">
+                <Label>Address</Label>
+                <textarea
+                  rows={2}
+                  value={form.address}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                  placeholder="House no., street, village / city, district"
+                  className={`${inputClass} resize-none`}
+                />
+              </div>
+            </Section>
+
+            <Section step={4} title="Parent / guardian" description="Optional, but helpful for follow-ups.">
+              <Field
+                label="Father's name"
+                value={form.fatherName}
+                onChange={(v) => handleChange("fatherName", v)}
+                placeholder="Full name"
+              />
+              <PhoneField
+                label="Father's mobile"
+                value={form.fatherPhone}
+                onChange={(v) => handleChange("fatherPhone", v)}
+                error={fieldErrors.fatherPhone}
+              />
+              <Field
+                label="Mother's name"
+                value={form.motherName}
+                onChange={(v) => handleChange("motherName", v)}
+                placeholder="Full name"
+              />
+              <PhoneField
+                label="Mother's mobile"
+                value={form.motherPhone}
+                onChange={(v) => handleChange("motherPhone", v)}
+                error={fieldErrors.motherPhone}
+              />
+            </Section>
+
+            <div className="flex items-start gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              <Info size={18} className="mt-0.5 shrink-0" />
+              <p>
+                The Student ID is created automatically
+                {kendraId ? (
+                  <>
+                    {" "}
+                    (e.g. <span className="font-mono font-semibold">{kendraId}-001</span>)
+                  </>
+                ) : null}
+                . Marks and attendance start at 0 and update from tests and daily classes.
+              </p>
             </div>
-          ) : null}
-
-          <div style={{ marginBottom: 24 }}>
-            <SelectField
-              label="Category (Caste)"
-              value={form.category}
-              options={casteCategories}
-              onChange={(v) => handleChange("category", v)}
-            />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <Field
-              label="Email Address"
-              type="email"
-              value={form.email}
-              onChange={(v) => handleChange("email", v)}
-              placeholder="student@example.com"
-            />
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <Field
-              label="Phone Number"
-              type="tel"
-              value={form.phone}
-              onChange={(v) => handleChange("phone", sanitizePhoneInput(v))}
-              placeholder="10-digit mobile number"
-              maxLength={10}
-              inputMode="numeric"
-            />
-          </div>
-
-          <div
-            style={{
-              marginBottom: 16,
-              fontWeight: 700,
-              color: "#1e3a5f",
-              fontSize: 16,
-            }}
-          >
-            Parents Information
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 24,
-              marginBottom: 24,
-            }}
-          >
-            <Field
-              label="Father's Name"
-              value={form.fatherName}
-              onChange={(v) => handleChange("fatherName", v)}
-              placeholder="Enter father's name"
-            />
-            <Field
-              label="Father's Phone"
-              type="tel"
-              value={form.fatherPhone}
-              onChange={(v) => handleChange("fatherPhone", sanitizePhoneInput(v))}
-              placeholder="10-digit mobile number"
-              maxLength={10}
-              inputMode="numeric"
-            />
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 24,
-              marginBottom: 24,
-            }}
-          >
-            <Field
-              label="Mother's Name"
-              value={form.motherName}
-              onChange={(v) => handleChange("motherName", v)}
-              placeholder="Enter mother's name"
-            />
-            <Field
-              label="Mother's Phone"
-              type="tel"
-              value={form.motherPhone}
-              onChange={(v) => handleChange("motherPhone", sanitizePhoneInput(v))}
-              placeholder="10-digit mobile number"
-              maxLength={10}
-              inputMode="numeric"
-            />
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <Field
-              label="Student ID"
-              value={form.studentId}
-              onChange={() => {}}
-              placeholder="Auto-generated based on the student's Kendra (e.g. RJ-JU-001)"
-              readOnly
-            />
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <Field
-              label="Address"
-              value={form.address}
-              onChange={(v) => handleChange("address", v)}
-              placeholder="Enter address"
-            />
-          </div>
-
-          <div style={{ marginBottom: 28 }}>
-            <SectionTitle>Current Performance (Marks)</SectionTitle>
-            <p style={{ margin: "0 0 12px", color: "#64748b", fontSize: 13 }}>
-              Auto-updated from tests/exams — not editable here.
-            </p>
-            {selectedSubjects.length === 0 ? (
-              <EmptyHint text="Select a course (and optional subjects if required) to preview subjects." />
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                {selectedSubjects.map((subject) => (
-                  <MetricCard key={`marks-${subject}`} title={subject} value={`${marks[subject]}`} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ marginBottom: 36 }}>
-            <SectionTitle>Attendance</SectionTitle>
-            <p style={{ margin: "0 0 12px", color: "#64748b", fontSize: 13 }}>
-              Auto-updated from daily class status — not editable here. Starts at 0%.
-            </p>
-            {selectedSubjects.length === 0 ? (
-              <EmptyHint text="Selected subjects will appear here with 0% attendance initially." />
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                {selectedSubjects.map((subject) => (
-                  <MetricCard
-                    key={`att-${subject}`}
-                    title={subject}
-                    value={`${attendance[subject]}%`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 16 }}>
+          {/* Footer stays visible while the form scrolls */}
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-7">
             <button
               type="button"
               onClick={onClose}
-              style={{
-                padding: "12px 22px",
-                borderRadius: 10,
-                border: "1px solid #D1D5DB",
-                background: "#FFFFFF",
-                color: "#374151",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               Cancel
             </button>
-
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                padding: "12px 26px",
-                borderRadius: 10,
-                border: "none",
-                cursor: submitting ? "not-allowed" : "pointer",
-                color: "#fff",
-                fontWeight: 600,
-                opacity: submitting ? 0.7 : 1,
-                background: "linear-gradient(135deg,#1e40af,#3b82f6)",
-              }}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Adding..." : "Add Student"}
+              {submitting ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <UserPlus size={16} />
+              )}
+              {submitting ? "Adding student…" : "Add student"}
             </button>
           </div>
         </form>
@@ -548,115 +427,75 @@ export default function NewStudent({ open, onClose, onSubmit, error, submitting,
   );
 }
 
-function SectionTitle({ children }) {
+function Section({ step, title, description, children }) {
   return (
-    <h3
-      style={{
-        fontSize: 18,
-        margin: "0 0 12px",
-        color: "#1a1f2e",
-        borderBottom: "2px solid #e2e8f0",
-        paddingBottom: 8,
-        fontWeight: 700,
-      }}
-    >
+    <section>
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+          {step}
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+          <p className="text-xs text-slate-500">{description}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function Label({ children, required = false, htmlFor }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-slate-700">
       {children}
-    </h3>
-  );
-}
-
-function EmptyHint({ text }) {
-  return <p style={{ margin: 0, color: "#94a3b8", fontSize: 14 }}>{text}</p>;
-}
-
-function MetricCard({ title, value }) {
-  return (
-    <div style={{ background: "#E0F2FE", padding: "12px 16px", borderRadius: 8 }}>
-      <strong style={{ color: "#0f172a" }}>{title}</strong>
-      <div style={{ marginTop: 6, color: "#0f172a" }}>{value}</div>
-    </div>
-  );
-}
-
-function SubjectChip({ label, checked, locked = false, onToggle }) {
-  return (
-    <label
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "10px 14px",
-        borderRadius: 10,
-        border: checked ? "1px solid #93c5fd" : "1px solid #dbe3ef",
-        background: locked ? "#f1f5f9" : checked ? "#eff6ff" : "#fff",
-        color: "#0f172a",
-        cursor: locked ? "not-allowed" : "pointer",
-        opacity: locked ? 0.95 : 1,
-        userSelect: "none",
-        fontSize: 14,
-        fontWeight: 600,
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={locked}
-        onChange={() => onToggle?.()}
-        style={{ width: 16, height: 16, cursor: locked ? "not-allowed" : "pointer" }}
-      />
-      {label}
-      {locked ? (
-        <span style={{ fontSize: 11, fontWeight: 600, color: "#64748b" }}>(locked)</span>
-      ) : null}
+      {required ? <span className="ml-0.5 text-red-500">*</span> : null}
     </label>
   );
 }
 
-function FormStyles() {
+function FieldError({ message }) {
+  if (!message) return null;
+  return <p className="mt-1 text-xs font-medium text-red-600">{message}</p>;
+}
+
+function Field({ label, value, onChange, placeholder, type = "text", required = false, error, autoComplete }) {
   return (
-    <style>{`
-      .new-student-form input::placeholder { color: #000000; opacity: 1; }
-      .new-student-form select, .new-student-form option { color: #000000; background: #ffffff; }
-      .new-student-form input:focus, .new-student-form select:focus { outline: none; border-color: #3b82f6; }
-    `}</style>
+    <div>
+      <Label required={required}>{label}</Label>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-invalid={Boolean(error)}
+        onChange={(e) => onChange?.(e.target.value)}
+        className={error ? invalidClass : inputClass}
+      />
+      <FieldError message={error} />
+    </div>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  readOnly = false,
-  maxLength,
-  inputMode,
-}) {
+function PhoneField({ label, value, onChange, required = false, error }) {
   return (
     <div>
-      <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#1e3a5f" }}>
-        {label}
-      </label>
-      <input
-        type={type}
-        readOnly={readOnly}
-        value={value}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        inputMode={inputMode}
-        onChange={(e) => onChange?.(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "14px 18px",
-          borderRadius: 12,
-          border: "1px solid #dbe3ef",
-          background: readOnly ? "#f8fafc" : "#fff",
-          color: "#000000",
-          fontSize: 15,
-          boxSizing: "border-box",
-          outline: "none",
-        }}
-      />
+      <Label required={required}>{label}</Label>
+      <div className="flex">
+        <span className="inline-flex items-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 text-sm text-slate-500">
+          +91
+        </span>
+        <input
+          type="tel"
+          inputMode="numeric"
+          maxLength={10}
+          value={value}
+          placeholder="98765 43210"
+          aria-invalid={Boolean(error)}
+          onChange={(e) => onChange(sanitizePhoneInput(e.target.value))}
+          className={`${error ? invalidClass : inputClass} rounded-l-none`}
+        />
+      </div>
+      <FieldError message={error} />
     </div>
   );
 }
@@ -664,22 +503,8 @@ function Field({
 function SelectField({ label, value, options, onChange }) {
   return (
     <div>
-      <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#1e3a5f" }}>
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "14px 18px",
-          borderRadius: 12,
-          border: "1px solid #dbe3ef",
-          background: "#fff",
-          fontSize: 15,
-          boxSizing: "border-box",
-        }}
-      >
+      <Label>{label}</Label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
         {options.map((item) => (
           <option key={item}>{item}</option>
         ))}
