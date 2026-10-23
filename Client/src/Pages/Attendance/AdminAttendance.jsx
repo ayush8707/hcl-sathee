@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarCheck, CalendarClock, CheckCircle2, Circle, ClipboardList } from "lucide-react";
 
 import { MainLayout } from "../../Components/MainLayout";
@@ -800,7 +801,7 @@ export default function AdminAttendance({
           )
         ) : null}
 
-                <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
               <CalendarCheck size={22} />
@@ -855,7 +856,7 @@ export default function AdminAttendance({
           canGo={hasCompleteSelection}
         />
 
-        <div className="bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <AttendanceToolbar
             search={search}
             setSearch={setSearch}
