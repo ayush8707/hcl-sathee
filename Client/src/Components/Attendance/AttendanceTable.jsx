@@ -26,20 +26,20 @@ export default function AttendanceTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px]">
         <thead>
-          <tr className="bg-[#CCD2DD]">
-            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
+          <tr className="border-b border-slate-200 bg-slate-50">
+            <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-12">
               S.No
             </th>
-            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
               {columnLabel}
             </th>
-            <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Attendance (%)
             </th>
-            <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Progress
             </th>
-            <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Status
             </th>
           </tr>
@@ -66,8 +66,8 @@ export default function AttendanceTable({
                 <tr
                   key={row.id || row.label}
                   className={`group transition-colors duration-100 ${
-                    isEven ? "bg-white" : "bg-[#f8f9fb]"
-                  } hover:bg-blue-50/40`}
+                    isEven ? "bg-white" : "bg-slate-50/50"
+                  } border-b border-slate-100 hover:bg-blue-50/40`}
                 >
                   <td className="px-6 py-4 text-xs text-gray-400 tabular-nums">
                     {String(i + 1).padStart(2, "0")}

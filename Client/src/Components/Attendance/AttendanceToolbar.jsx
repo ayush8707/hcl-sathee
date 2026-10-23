@@ -13,7 +13,7 @@ export default function AttendanceToolbar({
   showExport = true,
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-[rgba(0,0,0,0.06)]">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
       <div className="relative flex-1 min-w-[180px] max-w-xs">
         <Search
           size={15}
@@ -24,11 +24,11 @@ export default function AttendanceToolbar({
           placeholder="Search attendance records…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-8 pr-3 py-2 bg-[#f5f6f8] rounded-lg text-sm text-gray-700 placeholder-gray-400 border border-transparent focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+          className="w-full pl-8 pr-3 py-2 bg-white rounded-lg text-sm text-slate-800 placeholder-slate-400 border border-slate-300 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition"
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Date picker only for daily (and Mitra self-attendance). Weekly/monthly use current period. */}
         {(activeTab === "daily" || activeTab === "sathee-mitra") && (
           <label className="relative inline-flex items-center cursor-pointer">
@@ -40,7 +40,7 @@ export default function AttendanceToolbar({
               type="date"
               value={selectedDate}
               onChange={(e) => onDateChange?.(e.target.value)}
-              className="pl-8 pr-3 py-2 bg-[#f5f6f8] rounded-lg text-sm text-gray-600 border border-transparent focus:outline-none focus:border-blue-400 focus:bg-white transition-colors cursor-pointer min-w-[160px]"
+              className="pl-8 pr-3 py-2 bg-white rounded-lg text-sm text-slate-700 border border-slate-300 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition cursor-pointer min-w-[160px]"
               aria-label="Select attendance date"
             />
           </label>

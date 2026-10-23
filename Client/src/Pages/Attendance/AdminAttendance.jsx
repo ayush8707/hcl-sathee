@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { CalendarCheck, CalendarClock, CheckCircle2, Circle, ClipboardList } from "lucide-react";
 
 import { MainLayout } from "../../Components/MainLayout";
 import TabSelector from "../../Components/Attendance/TabSelector";
@@ -800,21 +800,27 @@ export default function AdminAttendance({
           )
         ) : null}
 
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-gray-900">Attendance Record</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {viewReady && appliedRole === "sathee-mitra"
-                ? "Track SATHEE MITRA presence with arrival and departure photo proof."
-                : "Combined centre attendance by day, week, and month."}
-            </p>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <CalendarCheck size={22} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Attendance Record</h1>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {viewReady && appliedRole === "sathee-mitra"
+                  ? "Track SATHEE MITRA presence with arrival and departure photo proof."
+                  : "Combined centre attendance by day, week, and month."}
+              </p>
+            </div>
           </div>
           {mitraSelfUpload ? null : isAdminView ? (
             <button
               type="button"
               onClick={() => navigate("/leave-requests")}
-              className="shrink-0 rounded-xl border border-sky-200 bg-white px-4 py-2.5 text-sm font-semibold text-sky-700 hover:bg-sky-50"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
+              <CalendarClock size={16} className="text-slate-500" />
               Leave Requests
             </button>
           ) : null}
@@ -873,14 +879,13 @@ export default function AdminAttendance({
           ) : null}
 
           {!viewReady ? (
-            <div className="px-6 py-16 text-center">
-              <p className="text-sm font-medium text-gray-700">
-                Select Type, Centre, and Role to view attendance
-              </p>
-              <p className="mt-1 text-xs text-gray-400">
-                Choose all three filters and click Go to load the records.
-              </p>
-            </div>
+            <EmptySelection
+              steps={[
+                { label: "Choose a period", done: Boolean(activeTab) },
+                ...(centreFilterEnabled ? [{ label: "Choose a centre", done: Boolean(selectedCentre) }] : []),
+                { label: "Choose whose attendance", done: Boolean(selectedRole) },
+              ]}
+            />
           ) : isMitraView ? (
             <SatheeMitraAttendance
               mitras={mitraSelfUpload ? currentMitra : centreMitras}
@@ -921,5 +926,27 @@ export default function AdminAttendance({
         />
       ) : null}
     </MainLayout>
+  );
+}
+
+function EmptySelection({ steps }) {
+  return (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-8 ring-blue-50/50">
+        <ClipboardList size={26} />
+      </span>
+      <h3 className="mt-5 text-base font-semibold text-slate-900">Nothing to show yet</h3>
+      <p className="mt-1 max-w-sm text-sm text-slate-500">
+        Pick the filters above, then click <span className="font-medium text-slate-700">Show attendance</span>.
+      </p>
+      <ul className="mt-5 space-y-2 text-left text-sm">
+        {steps.map(({ label, done }) => (
+          <li key={label} className={`flex items-center gap-2 ${done ? "text-emerald-700" : "text-slate-500"}`}>
+            {done ? <CheckCircle2 size={16} /> : <Circle size={16} className="text-slate-300" />}
+            {label}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
