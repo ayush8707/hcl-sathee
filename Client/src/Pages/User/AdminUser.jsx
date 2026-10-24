@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shield, GraduationCap, HeartHandshake } from "lucide-react";
+import { AlertTriangle, CheckCircle2, GraduationCap, HeartHandshake, Plus, Shield, UsersRound } from "lucide-react";
 
 import UserFilter from "../../Components/User/UserFilter";
 import UserToolbar from "../../Components/User/UserToolbar";
 import UserTable from "../../Components/User/UserTable";
-import TableSortControls from "../../Components/common/TableSortControls";
+import NewUser from "../../Components/User/NewUser";
 import { MainLayout } from "../../Components/MainLayout";
 import { createUser, fetchUsers, removeUser, resendInvite } from "../../services/users";
 import { matchesPortalCentre } from "../../utils/portalMapping";
@@ -45,6 +45,11 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
   const [passwordSetupLink, setPasswordSetupLink] = useState("");
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [showNewUser, setShowNewUser] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
+  const [notice, setNotice] = useState("");
+  // Fixed per visit so "last login" labels don't change between renders.
+  const [now] = useState(() => Date.now());
   useEscapeToClose(() => setUserToDelete(null), Boolean(userToDelete) && !deletingUser);
 
   const loadUsers = useCallback(async () => {
@@ -107,6 +112,7 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
   const handleAddUser = async (newUser) => {
     setSubmittingUser(true);
     setUsersError("");
+    setNotice("");
     setPasswordSetupLink("");
 
     try {
@@ -140,18 +146,27 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
 
   const handleDeleteUser = (user) => {
     setUsersError("");
+    setNotice("");
     setUserToDelete(user);
   };
   const handleResendInvite = async (user) => {
-  setUsersError("");
-  try {
-    const result = await resendInvite(user.id);
-    setUsersError(result.emailSent ? "" : result.message || "Could not resend invite");
-  } catch (error) {
-    console.error("Resend Invite Error:", error);
-    setUsersError(getApiErrorMessage(error, "Unable to resend invite right now"));
-  }
-};
+    setUsersError("");
+    setNotice("");
+    setResendingId(user.id);
+    try {
+      const result = await resendInvite(user.id);
+      if (result.emailSent) {
+        setNotice(`Invite sent again to ${user.email}.`);
+      } else {
+        setUsersError(result.message || "Could not resend invite");
+      }
+    } catch (error) {
+      console.error("Resend Invite Error:", error);
+      setUsersError(getApiErrorMessage(error, "Unable to resend invite right now"));
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
@@ -162,6 +177,7 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
     try {
       await removeUser(userToDelete.id);
       setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setNotice(`${userToDelete.name} was removed.`);
       setUserToDelete(null);
     } catch (error) {
       console.error("Delete User Error:", error);
@@ -180,12 +196,27 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
       onNavChange={onNavChange}
       onLogout={onLogout}
     >
-      <div className="max-w-7xl mx-auto px-2 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Users &amp; Roles</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage portal users and view their assigned roles.
-          </p>
+      <div className="mx-auto max-w-7xl space-y-6 px-2">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+              <UsersRound size={22} />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Users &amp; Roles</h1>
+              <p className="mt-0.5 text-sm text-slate-500">
+                Manage portal users, their roles and account status.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowNewUser(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            <Plus size={16} />
+            Add User
+          </button>
         </div>
 
         <UserFilter
@@ -195,25 +226,15 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
           roleCount={roleCount}
         />
 
-        <UserToolbar
-          search={search}
-          setSearch={setSearch}
-          onAddUser={handleAddUser}
-          submittingUser={submittingUser}
-          portalName={portalName}
-        />
-
-        <div className="flex justify-end">
-          <TableSortControls
-            value={sortDirection}
-            onChange={setSortDirection}
-            sortBy={sortBy}
-            onSortByChange={setSortBy}
-          />
-        </div>
+        {notice ? (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <CheckCircle2 size={16} className="shrink-0" />
+            {notice}
+          </div>
+        ) : null}
 
         {usersError && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <p>{usersError}</p>
             {passwordSetupLink ? (
               <div className="mt-3 rounded-xl border border-red-200 bg-white px-3 py-2">
@@ -239,31 +260,74 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
           </div>
         )}
 
-        <UserTable
-          users={sortedUsers}
-          allUsersCount={roleCount("All Users")}
-          roleBadge={roleBadge}
-          avatarColor={avatarColor}
-          onDeleteUser={handleDeleteUser}
-          onResendInvite={handleResendInvite}
-          loading={loadingUsers}
-        />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <UserToolbar
+            search={search}
+            setSearch={setSearch}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            onSortChange={(nextSortBy, nextDirection) => {
+              setSortBy(nextSortBy);
+              setSortDirection(nextDirection);
+            }}
+          />
+
+          <UserTable
+            users={sortedUsers}
+            allUsersCount={roleCount("All Users")}
+            roleBadge={roleBadge}
+            avatarColor={avatarColor}
+            onDeleteUser={handleDeleteUser}
+            onResendInvite={handleResendInvite}
+            resendingId={resendingId}
+            loading={loadingUsers}
+            now={now}
+          />
+        </div>
       </div>
 
+      {showNewUser ? (
+        <NewUser
+          onClose={() => setShowNewUser(false)}
+          onAddUser={async (newUser) => {
+            if (await handleAddUser(newUser)) setShowNewUser(false);
+          }}
+          submittingUser={submittingUser}
+          portalName={portalName}
+        />
+      ) : null}
+
       {userToDelete ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl">
-            <h3 className="text-xl font-bold text-slate-900">Delete User?</h3>
-            <p className="mt-3 text-sm text-slate-600">
-              Are you sure you want to delete the user{" "}
-              <strong className="text-slate-900">{userToDelete.name}</strong>?
-            </p>
-            <div className="mt-8 flex justify-center gap-3">
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !deletingUser) setUserToDelete(null);
+          }}
+        >
+          <div role="alertdialog" aria-modal="true" aria-labelledby="remove-user-title" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <AlertTriangle size={22} />
+              </span>
+              <div className="min-w-0">
+                <h3 id="remove-user-title" className="text-lg font-semibold text-slate-900">
+                  Remove user?
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  <strong className="text-slate-900">{userToDelete.name}</strong>
+                  <span className="block break-all text-slate-500">{userToDelete.email}</span>
+                </p>
+                <p className="mt-3 text-sm text-slate-600">
+                  They will no longer be able to log in to the portal. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setUserToDelete(null)}
                 disabled={deletingUser}
-                className="rounded-2xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -271,9 +335,9 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
                 type="button"
                 onClick={confirmDeleteUser}
                 disabled={deletingUser}
-                className="rounded-2xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-60"
               >
-                {deletingUser ? "Deleting…" : "Delete"}
+                {deletingUser ? "Removing…" : "Remove user"}
               </button>
             </div>
           </div>
