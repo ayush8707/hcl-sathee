@@ -42,9 +42,9 @@ function Partners({ className = "" }) {
           <li
             key={name}
             title={name}
-            className="flex h-14 min-w-14 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm"
+            className="flex h-16 min-w-16 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm"
           >
-            <img src={partnerLogo} alt={name} className="max-h-10 max-w-28 object-contain" />
+            <img src={partnerLogo} alt={name} className="max-h-12 max-w-36 object-contain" />
           </li>
         ))}
       </ul>
