@@ -1,7 +1,7 @@
 import { getCanonicalCentreKey } from "./portalMapping";
 
 /**
- * Hardcoded per-centre directory info for the 3 default centres — a
+ * Hardcoded per-centre directory info for the default centres — a
  * placeholder until centres get real ID/address fields on the backend.
  * Update this map (and swap it for a real lookup) once that lands. Custom
  * centres have none of this yet.
@@ -21,6 +21,12 @@ const CENTRE_DIRECTORY_BY_KEY = {
     id: "MP-BT-01",
     place: "Bhopal, Madhya Pradesh",
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
+  },
+  // Placeholder address until the exact Kendra address is confirmed.
+  HCLBARMER: {
+    id: "RJ-BM-01",
+    place: "Barmer, Rajasthan",
+    address: "Barmer, Rajasthan",
   },
 };
 

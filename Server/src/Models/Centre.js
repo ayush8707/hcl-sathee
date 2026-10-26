@@ -4,10 +4,10 @@ const { getCanonicalCentreKey } = require("../Utils/centreMatch");
 const TABLE = "centres";
 
 /**
- * The 3 centres the platform shipped with. They behave as always-present
+ * The built-in centres. They behave as always-present
  * defaults even when the `centres` table has no rows for them.
  */
-const DEFAULT_CENTRES = ["HCL RAJASTHAN", "HCL JHARKHAND", "HCL MADHYA PRADESH"];
+const DEFAULT_CENTRES = ["HCL RAJASTHAN", "HCL JHARKHAND", "HCL MADHYA PRADESH", "HCL BARMER"];
 
 /**
  * Normalize a free-text centre name into the same shape as the existing

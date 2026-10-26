@@ -1,4 +1,7 @@
+// Order matters: Barmer is also in Rajasthan, so its rule must come before the
+// state-wide Rajasthan (Jhunjhunu) rule.
 const CENTRE_RULES = [
+  { patterns: ["BARMER"], key: "HCLBARMER", label: "HCL BARMER" },
   { patterns: ["RAJASTHAN", "RAJATHAN"], key: "HCLRAJASTHAN", label: "HCL RAJASTHAN" },
   { patterns: ["JHARKHAND"], key: "HCLJHARKHAND", label: "HCL JHARKHAND" },
   { patterns: ["MADHYAPRADESH"], key: "HCLMADHYAPRADESH", label: "HCL MADHYA PRADESH" },
@@ -60,4 +63,5 @@ export const PORTAL_OPTIONS = [
   { title: "HCL SATHEE RAJASTHAN", subtitle: "Rajasthan Learning Portal" },
   { title: "HCL SATHEE JHARKHAND", subtitle: "Jharkhand Learning Portal" },
   { title: "HCL SATHEE MADHYA PRADESH", subtitle: "Madhya Pradesh Learning Portal" },
+  { title: "HCL SATHEE BARMER", subtitle: "Barmer Learning Portal" },
 ];
