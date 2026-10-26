@@ -314,6 +314,14 @@ const AppContent = () => {
     updateSession({ portal: name, isCustomCentre: false });
   };
 
+  const openPortal = (name) => {
+    if (!canAccessPortal(userCentre, name, userRole)) return;
+    selectPortal(name);
+    if (canEnterAdminDashboard(userRole)) navigate("/dashboard");
+    else if (canEnterPartnerDashboard(userRole)) navigate("/partner/dashboard");
+    else if (canEnterSatheeMitraDashboard(userRole)) navigate("/mitra/dashboard");
+  };
+
   const adminLayout = {
     portalName: selectedPortal,
     isCustomCentre,
@@ -415,7 +423,7 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<CardSelector_1 openHCLSathee={() => navigate("/portals")} onLogout={handleLogout} userRole={userRole} userCentre={userCentre} />} />
+        <Route path="/" element={<CardSelector_1 openHCLSathee={() => navigate("/portals")} openPortal={openPortal} onLogout={handleLogout} userRole={userRole} userCentre={userCentre} />} />
 
         <Route
           path="/portals"
@@ -425,26 +433,7 @@ const AppContent = () => {
               onLogout={handleLogout}
               userCentre={userCentre}
               userRole={userRole}
-              openDashboard={(name) => {
-                if (!canAccessPortal(userCentre, name, userRole)) return;
-
-                if (canEnterAdminDashboard(userRole)) {
-                  selectPortal(name);
-                  navigate("/dashboard");
-                  return;
-                }
-
-                if (canEnterPartnerDashboard(userRole)) {
-                  selectPortal(name);
-                  navigate("/partner/dashboard");
-                  return;
-                }
-
-                if (canEnterSatheeMitraDashboard(userRole)) {
-                  selectPortal(name);
-                  navigate("/mitra/dashboard");
-                }
-              }}
+              openDashboard={openPortal}
             />
           }
         />

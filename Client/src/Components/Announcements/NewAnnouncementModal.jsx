@@ -7,7 +7,7 @@ const DEFAULT_CENTRE_OPTIONS = [
   "HCL RAJASTHAN",
   "HCL JHARKHAND",
   "HCL MADHYA PRADESH",
-  "HCL BARMER",
+  "SATHEE BARMER",
 ];
 
 const sameCentre = (a, b) =>

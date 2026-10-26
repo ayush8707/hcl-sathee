@@ -23,7 +23,7 @@ const CENTRE_DIRECTORY_BY_KEY = {
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
   },
   // Placeholder address until the exact Kendra address is confirmed.
-  HCLBARMER: {
+  SATHEEBARMER: {
     id: "RJ-BM-01",
     place: "Barmer, Rajasthan",
     address: "Barmer, Rajasthan",

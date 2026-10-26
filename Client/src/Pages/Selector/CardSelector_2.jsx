@@ -15,6 +15,7 @@ import {
   canEnterSatheeMitraDashboard,
   getCanonicalCentreKey,
   PORTAL_OPTIONS,
+  isStandalonePortal,
 } from "../../utils/portalMapping";
 import { getCentreId, getCentrePlace } from "../../utils/centreDirectory";
 
@@ -58,7 +59,8 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
       setExtraCentres(
         centres.filter(
           (centre) =>
-            !DEFAULT_CENTRE_KEYS.has(getCanonicalCentreKey(centre.name))
+            !DEFAULT_CENTRE_KEYS.has(getCanonicalCentreKey(centre.name)) &&
+            !isStandalonePortal(centre.name)
         )
       );
     } catch (error) {

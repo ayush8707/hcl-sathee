@@ -7,7 +7,7 @@ const TABLE = "centres";
  * The built-in centres. They behave as always-present
  * defaults even when the `centres` table has no rows for them.
  */
-const DEFAULT_CENTRES = ["HCL RAJASTHAN", "HCL JHARKHAND", "HCL MADHYA PRADESH", "HCL BARMER"];
+const DEFAULT_CENTRES = ["HCL RAJASTHAN", "HCL JHARKHAND", "HCL MADHYA PRADESH", "SATHEE BARMER"];
 
 /**
  * Normalize a free-text centre name into the same shape as the existing

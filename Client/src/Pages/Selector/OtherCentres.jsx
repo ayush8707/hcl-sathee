@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { MainLayout } from "../../Components/MainLayout";
 import { fetchCentresOverview } from "../../services/centres";
-import { getCanonicalCentreKey, PORTAL_OPTIONS } from "../../utils/portalMapping";
+import { getCanonicalCentreKey, isStandalonePortal, PORTAL_OPTIONS } from "../../utils/portalMapping";
 import { getCentreId } from "../../utils/centreDirectory";
 
 /** Centre name -> the portal name the rest of the app expects (default centres
@@ -129,7 +129,7 @@ export default function OtherCentres({
           <p className="py-24 text-center text-slate-500">No centres found.</p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {centres.map((centre) => {
+            {centres.filter((centre) => !isStandalonePortal(centre.name)).map((centre) => {
               const isCurrent =
                 currentKey && getCanonicalCentreKey(centre.name) === currentKey;
               return (

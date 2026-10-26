@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2 } from "lucide-react";
+import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2, LayoutGrid } from "lucide-react";
 import HCLLogo from "../assets/HCL.svg";
+import SatheeLogo from "../assets/sathee.svg";
+import { isStandalonePortal } from "../utils/portalMapping";
 
 function NavButtons({
   navItems,
@@ -50,7 +52,10 @@ export function MainLayout({
   // Partner/Mitra portals live under /partner/* and /mitra/*; everything else in
   // this layout is the Admin portal, which is the only one that switches centres.
   const isAdminArea = !/^\/(partner|mitra)(\/|$)/.test(location.pathname);
-  const showOtherCentres = isAdminArea && location.pathname !== "/centres";
+  // Standalone Kendras (e.g. SATHEE Barmer) are not part of HCL SATHEE, so they
+  // show the SATHEE logo and link back to the platform list, not HCL centres.
+  const standalone = isStandalonePortal(portalName);
+  const showOtherCentres = isAdminArea && location.pathname !== "/centres" && !standalone;
 
   useEffect(() => {
     if (!mobileNavOpen) return undefined;
@@ -89,9 +94,9 @@ export function MainLayout({
             <Menu size={20} />
           </button>
           <img
-            src={HCLLogo}
-            alt="HCL Logo"
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
+            src={standalone ? SatheeLogo : HCLLogo}
+            alt={standalone ? "SATHEE Logo" : "HCL Logo"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 ${standalone ? "rounded-full object-cover" : "object-contain"}`}
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">
@@ -102,6 +107,17 @@ export function MainLayout({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {standalone ? (
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="bg-white/20 hover:bg-white/30 text-slate-900 px-3 sm:px-5 py-2 rounded-2xl text-sm font-medium flex items-center gap-2 transition-colors"
+            >
+              <LayoutGrid size={18} />
+              <span className="hidden sm:inline">Platforms</span>
+            </button>
+          ) : null}
+
           {showOtherCentres ? (
             <button
               type="button"

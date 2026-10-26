@@ -3,7 +3,7 @@ const VALID_CENTRES = [
   "HCL RAJATHAN",
   "HCL JHARKHAND",
   "HCL MADHYA PRADESH",
-  "HCL BARMER",
+  "SATHEE BARMER",
 ];
 
 const normalizeCentreValue = (value = "") =>
@@ -17,7 +17,7 @@ const getCanonicalCentreKey = (value = "") => {
   const normalized = normalizeCentreValue(value);
 
   // Barmer is in Rajasthan too, so check it before the state-wide rule.
-  if (normalized.includes("BARMER")) return "HCLBARMER";
+  if (normalized.includes("BARMER")) return "SATHEEBARMER";
   if (normalized.includes("RAJASTHAN") || normalized.includes("RAJATHAN")) {
     return "HCLRAJASTHAN";
   }
