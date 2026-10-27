@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUpRight, Globe, LogOut, Plus, X } from "lucide-react";
+import { ArrowUpRight, Globe, Lock, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
 import HeroFutureEnergiesLogo from "../../assets/hero-future-energies.png";
@@ -58,6 +58,9 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
       icon: (size) => <LogoIcon src={HCLLogo} alt="HCL" size={size} />,
       buttonText: "Open HCL SATHEE",
       onClick: openHCLSathee,
+      partner: "HCL",
+      // Users of a standalone Kendra (e.g. Barmer) see HCL SATHEE but can't open it.
+      locked: !isAdmin && isStandalonePortal(userCentre),
       badge: "Internal",
     },
     {
@@ -71,10 +74,9 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     },
   ];
 
-  // Standalone Kendras, shown only to admins and to that Kendra's own users.
-  const kendraCards = STANDALONE_PORTALS.filter((portal) =>
-    canAccessPortal(userCentre, portal.title, userRole)
-  ).map((portal) => ({
+  // Every user sees every partner Kendra, so they know who SATHEE works with,
+  // but only admins and that Kendra's own users can open it.
+  const kendraCards = STANDALONE_PORTALS.map((portal) => ({
     id: portal.title,
     title: portal.label,
     subtitle: portal.subtitle,
@@ -88,6 +90,7 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     buttonText: "Open Kendra",
     onClick: () => openPortal?.(portal.title),
     badge: "Kendra",
+    locked: !canAccessPortal(userCentre, portal.title, userRole),
   }));
 
   const customCards = customDashboards.map((dashboard) => ({
@@ -111,28 +114,26 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     badge: "Custom",
   };
 
-  // Users of a standalone Kendra (e.g. Barmer) don't belong to HCL SATHEE.
-  const visibleBuiltIns =
-    !isAdmin && isStandalonePortal(userCentre)
-      ? builtInCards.filter((card) => card.id !== "hcl-sathee")
-      : builtInCards;
+  // Partner platforms first (HCL SATHEE, then each Kendra), then SATHEE itself.
+  const [hclCard, satheeCard] = builtInCards;
+  const platformCards = [hclCard, ...kendraCards, satheeCard];
 
   const cards = isAdmin
-    ? [...builtInCards, ...kendraCards, ...customCards, addDashboardCard]
-    : [...visibleBuiltIns, ...kendraCards];
+    ? [...platformCards, ...customCards, addDashboardCard]
+    : platformCards;
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#F1F5F9] font-sans text-black">
       <header className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 border-b border-[#3B82F6]/20 bg-[#5785d0]">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <img
-            src={HCLLogo}
-            alt="HCL Logo"
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0"
+            src={SatheeLogo}
+            alt="SATHEE Logo"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0"
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">
-              HCL SATHEE
+              SATHEE
             </p>
             <p className="text-xs text-[#101011] truncate">Dashboard Selection</p>
           </div>
@@ -160,10 +161,14 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:mt-10 lg:gap-7">
           {cards.map(
-            ({ id, title, subtitle, icon, buttonText, onClick, badge, removable, partner }) => (
+            ({ id, title, subtitle, icon, buttonText, onClick, badge, removable, partner, locked }) => (
               <article
                 key={id}
-                className="group relative flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md lg:p-7"
+                className={`group relative flex min-w-0 flex-col rounded-2xl border p-6 shadow-sm transition duration-200 lg:p-7 ${
+                  locked
+                    ? "border-slate-200 bg-slate-50/80"
+                    : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+                }`}
               >
                 {removable ? (
                   <button
@@ -177,7 +182,11 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                 ) : null}
 
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5 text-[#3B82F6]">
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5 text-[#3B82F6] ${
+                      locked ? "opacity-60 grayscale" : ""
+                    }`}
+                  >
                     {icon(26)}
                   </div>
 
@@ -211,17 +220,29 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                   </p>
                 ) : null}
 
-                <button
-                  type="button"
-                  onClick={onClick}
-                  className="mt-6 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#3B82F6] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                >
-                  {buttonText}
-                  <ArrowUpRight
-                    size={18}
-                    className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </button>
+                {locked ? (
+                  <div className="mt-6">
+                    <span className="inline-flex w-fit cursor-not-allowed items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-400">
+                      <Lock size={16} />
+                      No access
+                    </span>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Partner platform. Only its own team and admins can open it.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onClick}
+                    className="mt-6 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#3B82F6] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                  >
+                    {buttonText}
+                    <ArrowUpRight
+                      size={18}
+                      className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    />
+                  </button>
+                )}
               </article>
             )
           )}
