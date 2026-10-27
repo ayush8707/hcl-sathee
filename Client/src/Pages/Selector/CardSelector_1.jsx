@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowUpRight, Globe, Lock, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
-import HeroFutureEnergiesLogo from "../../assets/hero-future-energies.png";
+import { CSR_PARTNERS } from "../../config/csrPartners";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
 import {
   addCustomDashboard,
@@ -21,10 +21,7 @@ function LogoIcon({ src, alt, contain = false }) {
   );
 }
 
-// Logos of the CSR partners that fund standalone Kendras.
-const PARTNER_LOGOS = {
-  "Hero Future Energies": HeroFutureEnergiesLogo,
-};
+const partnerLogo = (name) => CSR_PARTNERS.find((partner) => partner.name === name)?.logo ?? null;
 
 // SATHEE web app entry point. Swap for the real URL after deployment/domain.
 const SATHEE_APP_URL = "http://localhost:5174/";
@@ -81,8 +78,8 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     title: portal.label,
     subtitle: portal.subtitle,
     icon: (size) =>
-      PARTNER_LOGOS[portal.partner] ? (
-        <LogoIcon src={PARTNER_LOGOS[portal.partner]} alt={portal.partner} size={size} contain />
+      partnerLogo(portal.partner) ? (
+        <LogoIcon src={partnerLogo(portal.partner)} alt={portal.partner} size={size} contain />
       ) : (
         <LogoIcon src={SatheeLogo} alt={portal.title} size={size} />
       ),

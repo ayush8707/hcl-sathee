@@ -388,9 +388,10 @@ alter default privileges in schema public
 --   Firestore's random doc id). It's unused now but left in place rather than
 --   forcing a destructive column drop on a live table.
 -- * All tables are queried through the `service_role` key from the Node
---   server only — Row Level Security is intentionally left OFF (the service
---   role bypasses RLS regardless, but if you ever expose these tables to
---   anon/client-side queries, enable RLS and write policies before doing so).
+--   server only. Row Level Security is switched ON (see the end of this file)
+--   with no policies, so the public anon/authenticated keys can't read or
+--   change anything; the service role bypasses RLS. If you ever query these
+--   tables from the browser, write RLS policies for that first.
 
 -- ---------------------------------------------------------------- site_settings
 -- Small key/value store; "login_notice" holds the notice shown on the login page.
@@ -399,3 +400,15 @@ create table if not exists site_settings (
   value      jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- ---------------------------------------------------------------- row level security
+-- Keep the public anon/authenticated keys out of every table. The server's
+-- service_role key bypasses RLS, so the app is unaffected. Safe to re-run.
+do $$
+declare
+  t record;
+begin
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('alter table public.%I enable row level security', t.tablename);
+  end loop;
+end $$;

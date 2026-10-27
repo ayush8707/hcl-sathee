@@ -82,6 +82,11 @@ const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentre
 export const isStandalonePortal = (portalOrCentreName = "") =>
   STANDALONE_KEYS.has(getCanonicalCentreKey(portalOrCentreName));
 
+export const getStandalonePartnerName = (portalOrCentreName = "") => {
+  const key = getCanonicalCentreKey(portalOrCentreName);
+  return STANDALONE_PORTALS.find((p) => getCanonicalCentreKey(p.title) === key)?.partner ?? null;
+};
+
 // True when `centre` belongs to the same platform as `portalOrCentre`: a
 // standalone Kendra only matches itself; HCL centres match each other.
 export const isSamePlatform = (centre, portalOrCentre) =>

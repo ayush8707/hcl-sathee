@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
 const { toDate } = require("../Utils/firestoreHelpers");
 
 const TABLE = "subject_performances";
@@ -46,8 +46,11 @@ const findByStudentIds = async (studentIds = []) => {
   const CHUNK = 200;
   for (let i = 0; i < uniqueIds.length; i += CHUNK) {
     const chunk = uniqueIds.slice(i, i + CHUNK);
-    const { data, error } = await getSupabase().from(TABLE).select("*").in("student_id", chunk);
-    assertNoError(error, "Failed to load subject performances");
+    // Paged: 200 students x several subjects can exceed Supabase's 1000-row cap.
+    const data = await selectAllRows(
+      () => getSupabase().from(TABLE).select("*").in("student_id", chunk),
+      "Failed to load subject performances"
+    );
     for (const row of data || []) {
       const key = String(row.student_id);
       if (!byStudent.has(key)) byStudent.set(key, []);

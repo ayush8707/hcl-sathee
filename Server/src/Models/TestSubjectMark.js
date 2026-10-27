@@ -71,8 +71,11 @@ const findByStudentIds = async (studentIds = []) => {
   const CHUNK = 200;
   for (let i = 0; i < uniqueIds.length; i += CHUNK) {
     const chunk = uniqueIds.slice(i, i + CHUNK);
-    const { data, error } = await getSupabase().from(TABLE).select("*").in("student_id", chunk);
-    assertNoError(error, "Failed to load student marks");
+    // Paged: 200 students x several subjects can exceed Supabase's 1000-row cap.
+    const data = await selectAllRows(
+      () => getSupabase().from(TABLE).select("*").in("student_id", chunk),
+      "Failed to load student marks"
+    );
     for (const row of data || []) {
       const key = String(row.student_id);
       if (!byStudent.has(key)) byStudent.set(key, []);

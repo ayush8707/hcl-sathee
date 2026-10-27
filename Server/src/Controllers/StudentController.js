@@ -156,18 +156,23 @@ exports.getStudents = wrap(
     });
     const students = filterByUserCentre(studentsPage, req.user);
 
-    // Per-student subject rows only — never scan entire performance/attendance collections.
-    const enriched = await Promise.all(
-      students.map(async (student) => {
-        const studentKey = Number(student.id) || student.id;
-        const [performances, attendances, testMarks] = await Promise.all([
-          SubjectPerformance.findByStudentId(studentKey),
-          SubjectAttendance.findByStudentId(studentKey),
-          TestSubjectMark.findByStudent(studentKey),
-        ]);
-        return enrichStudent(student, performances, attendances, testMarks);
-      })
-    );
+    // Subject rows for the whole page in 3 batched queries, not 3 per student:
+    // one round trip per student made the Students page take several seconds.
+    const studentIds = students.map((student) => Number(student.id) || student.id);
+    const [performancesById, attendancesById, marksById] = await Promise.all([
+      SubjectPerformance.findByStudentIds(studentIds),
+      SubjectAttendance.findByStudentIds(studentIds),
+      TestSubjectMark.findByStudentIds(studentIds),
+    ]);
+    const enriched = students.map((student) => {
+      const key = String(Number(student.id) || student.id);
+      return enrichStudent(
+        student,
+        performancesById.get(key) || [],
+        attendancesById.get(key) || [],
+        marksById.get(key) || []
+      );
+    });
 
     return ok(res, { students: enriched, nextCursor: studentsPage.nextCursor });
   },
