@@ -55,10 +55,10 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
       id: "hcl-sathee",
       title: "HCL SATHEE",
       subtitle: "SATHEE Kendras in Rajasthan, Jharkhand and Madhya Pradesh",
-      icon: (size) => <LogoIcon src={HCLLogo} alt="HCL" size={size} />,
+      icon: (size) => <LogoIcon src={HCLLogo} alt="Hindustan Copper Limited" size={size} />,
       buttonText: "Open HCL SATHEE",
       onClick: openHCLSathee,
-      partner: "HCL",
+      partner: "Hindustan Copper Limited (HCL)",
       // Users of a standalone Kendra (e.g. Barmer) see HCL SATHEE but can't open it.
       locked: !isAdmin && isStandalonePortal(userCentre),
       badge: "Partner",
