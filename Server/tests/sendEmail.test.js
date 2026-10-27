@@ -79,4 +79,13 @@ assert.ok(!/linear-gradient/i.test(welcome.html), "no banner gradients");
 assert.ok(!/password/i.test(welcome.subject) || !/create your password/i.test(welcome.subject), "subject avoids the phishing-style phrase");
 assert.ok(!welcome.html.includes("•"), "no non-ASCII decoration in templates");
 
+// --- partner role wording: CSR PARTNER only for standalone Kendras -------
+const { displayRoleForCentre } = require("../src/Utils/centreMatch");
+assert.strictEqual(displayRoleForCentre("HCL PARTNER", "SATHEE BARMER"), "CSR PARTNER");
+assert.strictEqual(displayRoleForCentre("HCL PARTNER", "HCL RAJASTHAN"), "HCL PARTNER");
+assert.strictEqual(displayRoleForCentre("SATHEE MITRA", "SATHEE BARMER"), "SATHEE MITRA");
+assert.strictEqual(displayRoleForCentre("HCL PARTNER", null), "HCL PARTNER");
+const barmerWelcome = renderWelcomeEmail({ name: "Rakesh", role: displayRoleForCentre("HCL PARTNER", "SATHEE BARMER"), link });
+assert.ok(barmerWelcome.text.includes("role: CSR PARTNER") && !barmerWelcome.html.includes("HCL PARTNER"));
+
 console.log("send email tests passed");

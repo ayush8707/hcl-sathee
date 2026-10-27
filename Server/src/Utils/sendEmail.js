@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { google } = require("googleapis");
 const { createPasswordLink } = require("./createPasswordLink");
+const { displayRoleForCentre } = require("./centreMatch");
 
 const FROM_NAME = "SATHEE Admin";
 
@@ -280,9 +281,12 @@ const renderPasswordResetOtpEmail = ({ name, otp }) => {
   return { subject: "Your HCL SATHEE verification code", text, html };
 };
 
-async function sendWelcomeEmail(to, name, role) {
+// `centre` only changes how the role is worded in the email (e.g. CSR PARTNER
+// for SATHEE Barmer); the link always carries the stored role.
+async function sendWelcomeEmail(to, name, role, centre) {
   const link = createPasswordLink(name, to, role);
-  return deliver({ to, ...renderWelcomeEmail({ name, role, link }) });
+  const shownRole = displayRoleForCentre(role, centre);
+  return deliver({ to, ...renderWelcomeEmail({ name, role: shownRole, link }) });
 }
 
 async function sendSupportQueryEmail(to, { partnerName, title, description }) {
