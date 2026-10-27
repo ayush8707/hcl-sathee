@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const { google } = require("googleapis");
 const { createPasswordLink } = require("./createPasswordLink");
-const { displayRoleForCentre } = require("./centreMatch");
+const { displayRoleForCentre, platformNameForCentre } = require("./centreMatch");
 
 const FROM_NAME = "SATHEE Admin";
 
@@ -170,12 +170,12 @@ async function deliver({ to, subject, text, html }) {
 
 // Deliberately plain: no banner graphics, no gradients, and every value that
 // came from a user is escaped before it reaches the HTML.
-const layout = (bodyHtml) => `<!DOCTYPE html>
+const layout = (bodyHtml, footerName = "HCL SATHEE Portal") => `<!DOCTYPE html>
 <html>
   <body style="margin:0; padding:24px; background:#ffffff;">
     <div style="font-family: Arial, Helvetica, sans-serif; font-size:15px; color:#1f2937; line-height:1.6; max-width:560px;">
 ${bodyHtml}
-      <p style="margin:28px 0 0; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">HCL SATHEE Portal</p>
+      <p style="margin:28px 0 0; padding-top:14px; border-top:1px solid #e5e7eb; font-size:12px; color:#6b7280;">${escapeHtml(footerName)}</p>
     </div>
   </body>
 </html>`;
@@ -183,13 +183,16 @@ ${bodyHtml}
 const boxStyle =
   "background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; white-space:pre-wrap;";
 
-const renderWelcomeEmail = ({ name, role, link }) => {
+// `platform` is "HCL SATHEE" for HCL centres, or a standalone Kendra's own
+// name such as "SATHEE Barmer".
+const renderWelcomeEmail = ({ name, role, link, platform = "HCL SATHEE" }) => {
   const portalUrl = getPortalUrl();
+  const article = /^[AEIOU]/i.test(platform) || /^HCL\b/.test(platform) ? "an" : "a";
 
   const text = [
     `Hello ${name},`,
     "",
-    `An administrator has created an HCL SATHEE account for you (role: ${role}).`,
+    `An administrator has created ${article} ${platform} account for you (role: ${role}).`,
     "",
     "To finish setting it up, choose your password using the link below. The link is valid for 24 hours:",
     link,
@@ -198,18 +201,19 @@ const renderWelcomeEmail = ({ name, role, link }) => {
     "",
     "If you were not expecting this account, you can ignore this email.",
     "",
-    "HCL SATHEE",
+    platform,
   ].join("\n");
 
   const html = layout(`
       <p style="margin:0 0 14px;">Hello ${escapeHtml(name)},</p>
-      <p style="margin:0 0 14px;">An administrator has created an HCL SATHEE account for you (role: <strong>${escapeHtml(role)}</strong>).</p>
+      <p style="margin:0 0 14px;">An administrator has created ${article} ${escapeHtml(platform)} account for you (role: <strong>${escapeHtml(role)}</strong>).</p>
       <p style="margin:0 0 14px;">To finish setting it up, choose your password. The link is valid for 24 hours.</p>
       <p style="margin:20px 0;"><a href="${escapeHtml(link)}" style="display:inline-block; padding:10px 18px; background:#2563eb; color:#ffffff; text-decoration:none; border-radius:6px;">Set your password</a></p>
       <p style="margin:0 0 14px;">You can also open the portal directly at <a href="${escapeHtml(portalUrl)}" style="color:#2563eb;">${escapeHtml(portalUrl)}</a>. If the link has expired, ask your administrator to resend the invitation.</p>
-      <p style="margin:0; color:#6b7280;">If you were not expecting this account, you can ignore this email.</p>`);
+      <p style="margin:0; color:#6b7280;">If you were not expecting this account, you can ignore this email.</p>`,
+    `${platform} Portal`);
 
-  return { subject: "Set up your HCL SATHEE account", text, html };
+  return { subject: `Set up your ${platform} account`, text, html };
 };
 
 const renderSupportQueryEmail = ({ partnerName, title, description }) => {
@@ -286,7 +290,8 @@ const renderPasswordResetOtpEmail = ({ name, otp }) => {
 async function sendWelcomeEmail(to, name, role, centre) {
   const link = createPasswordLink(name, to, role);
   const shownRole = displayRoleForCentre(role, centre);
-  return deliver({ to, ...renderWelcomeEmail({ name, role: shownRole, link }) });
+  const platform = platformNameForCentre(centre);
+  return deliver({ to, ...renderWelcomeEmail({ name, role: shownRole, link, platform }) });
 }
 
 async function sendSupportQueryEmail(to, { partnerName, title, description }) {

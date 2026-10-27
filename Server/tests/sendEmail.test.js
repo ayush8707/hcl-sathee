@@ -85,7 +85,20 @@ assert.strictEqual(displayRoleForCentre("HCL PARTNER", "SATHEE BARMER"), "CSR PA
 assert.strictEqual(displayRoleForCentre("HCL PARTNER", "HCL RAJASTHAN"), "HCL PARTNER");
 assert.strictEqual(displayRoleForCentre("SATHEE MITRA", "SATHEE BARMER"), "SATHEE MITRA");
 assert.strictEqual(displayRoleForCentre("HCL PARTNER", null), "HCL PARTNER");
-const barmerWelcome = renderWelcomeEmail({ name: "Rakesh", role: displayRoleForCentre("HCL PARTNER", "SATHEE BARMER"), link });
-assert.ok(barmerWelcome.text.includes("role: CSR PARTNER") && !barmerWelcome.html.includes("HCL PARTNER"));
+const { platformNameForCentre } = require("../src/Utils/centreMatch");
+assert.strictEqual(platformNameForCentre("SATHEE BARMER"), "SATHEE Barmer");
+assert.strictEqual(platformNameForCentre("HCL RAJASTHAN"), "HCL SATHEE");
+assert.strictEqual(platformNameForCentre(null), "HCL SATHEE");
+const barmerWelcome = renderWelcomeEmail({
+  name: "Rakesh",
+  role: displayRoleForCentre("HCL PARTNER", "SATHEE BARMER"),
+  link,
+  platform: platformNameForCentre("SATHEE BARMER"),
+});
+assert.ok(barmerWelcome.text.includes("created a SATHEE Barmer account for you (role: CSR PARTNER)"));
+assert.strictEqual(barmerWelcome.subject, "Set up your SATHEE Barmer account");
+assert.ok(!/HCL/.test(barmerWelcome.html) && !/HCL/.test(barmerWelcome.text), "Barmer invite never mentions HCL");
+assert.strictEqual(welcome.subject, "Set up your HCL SATHEE account", "HCL invites unchanged");
+assert.ok(welcome.text.includes("created an HCL SATHEE account for you (role: HCL PARTNER)"));
 
 console.log("send email tests passed");
