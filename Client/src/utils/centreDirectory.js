@@ -22,11 +22,11 @@ const CENTRE_DIRECTORY_BY_KEY = {
     place: "Bhopal, Madhya Pradesh",
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
   },
-  // Placeholder address until the exact Kendra address is confirmed.
+  // Funded by Hero Future Energies (not part of HCL SATHEE).
   SATHEEBARMER: {
-    id: "RJ-BM-01",
-    place: "Barmer, Rajasthan",
-    address: "Barmer, Rajasthan",
+    id: "RJ-BA-01",
+    place: "Shiv, Barmer, Rajasthan",
+    address: "Government Senior Secondary School, Near Baba Garib Math Ji, Shiv, Rajasthan 344701",
   },
 };
 

@@ -67,8 +67,14 @@ export const PORTAL_OPTIONS = [
 
 // Kendras that are their own platform rather than part of HCL SATHEE. They get
 // a card on the first "Choose Your Platform" screen instead of the state list.
+// `partner` is the CSR partner that funds the Kendra.
 export const STANDALONE_PORTALS = [
-  { title: "SATHEE BARMER", label: "SATHEE Barmer", subtitle: "SATHEE Kendra, Barmer (Rajasthan)" },
+  {
+    title: "SATHEE BARMER",
+    label: "SATHEE Barmer",
+    subtitle: "SATHEE Kendra, Shiv (Barmer), Rajasthan",
+    partner: "Hero Future Energies",
+  },
 ];
 
 const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentreKey(p.title)));
