@@ -10,6 +10,7 @@ const CENTRE_DIRECTORY_BY_KEY = {
   HCLRAJASTHAN: "RJ-JU-01",
   HCLJHARKHAND: "JH-EM-01",
   HCLMADHYAPRADESH: "MP-BT-01",
+  SATHEEBARMER: "RJ-BM-01",
 };
 
 /** Accepts a centre name or a portal title (e.g. "HCL SATHEE RAJASTHAN"). */

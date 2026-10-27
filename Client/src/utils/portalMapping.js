@@ -1,4 +1,7 @@
+// Order matters: Barmer is also in Rajasthan, so its rule must come before the
+// state-wide Rajasthan (Jhunjhunu) rule.
 const CENTRE_RULES = [
+  { patterns: ["BARMER"], key: "SATHEEBARMER", label: "SATHEE BARMER" },
   { patterns: ["RAJASTHAN", "RAJATHAN"], key: "HCLRAJASTHAN", label: "HCL RAJASTHAN" },
   { patterns: ["JHARKHAND"], key: "HCLJHARKHAND", label: "HCL JHARKHAND" },
   { patterns: ["MADHYAPRADESH"], key: "HCLMADHYAPRADESH", label: "HCL MADHYA PRADESH" },
@@ -61,3 +64,14 @@ export const PORTAL_OPTIONS = [
   { title: "HCL SATHEE JHARKHAND", subtitle: "Jharkhand Learning Portal" },
   { title: "HCL SATHEE MADHYA PRADESH", subtitle: "Madhya Pradesh Learning Portal" },
 ];
+
+// Kendras that are their own platform rather than part of HCL SATHEE. They get
+// a card on the first "Choose Your Platform" screen instead of the state list.
+export const STANDALONE_PORTALS = [
+  { title: "SATHEE BARMER", label: "SATHEE Barmer", subtitle: "SATHEE Kendra, Barmer (Rajasthan)" },
+];
+
+const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentreKey(p.title)));
+
+export const isStandalonePortal = (portalOrCentreName = "") =>
+  STANDALONE_KEYS.has(getCanonicalCentreKey(portalOrCentreName));

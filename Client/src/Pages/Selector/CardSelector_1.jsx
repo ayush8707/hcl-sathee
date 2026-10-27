@@ -8,6 +8,7 @@ import {
   getCustomDashboards,
   removeCustomDashboard,
 } from "../../utils/customDashboards";
+import { canAccessPortal, isStandalonePortal, STANDALONE_PORTALS } from "../../utils/portalMapping";
 
 function LogoIcon({ src, alt }) {
   return (
@@ -22,7 +23,7 @@ function LogoIcon({ src, alt }) {
 // SATHEE web app entry point. Swap for the real URL after deployment/domain.
 const SATHEE_APP_URL = "http://localhost:5174/";
 
-export default function DashboardSelect({ openHCLSathee, onLogout, userRole, userCentre }) {
+export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, userRole, userCentre }) {
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
 
   const openSatheeApp = () => {
@@ -64,6 +65,19 @@ export default function DashboardSelect({ openHCLSathee, onLogout, userRole, use
     },
   ];
 
+  // Standalone Kendras, shown only to admins and to that Kendra's own users.
+  const kendraCards = STANDALONE_PORTALS.filter((portal) =>
+    canAccessPortal(userCentre, portal.title, userRole)
+  ).map((portal) => ({
+    id: portal.title,
+    title: portal.label,
+    subtitle: portal.subtitle,
+    icon: (size) => <LogoIcon src={SatheeLogo} alt={portal.title} size={size} />,
+    buttonText: "Open Kendra",
+    onClick: () => openPortal?.(portal.title),
+    badge: "Kendra",
+  }));
+
   const customCards = customDashboards.map((dashboard) => ({
     id: dashboard.id,
     title: dashboard.title,
@@ -85,9 +99,15 @@ export default function DashboardSelect({ openHCLSathee, onLogout, userRole, use
     badge: "Custom",
   };
 
+  // Users of a standalone Kendra (e.g. Barmer) don't belong to HCL SATHEE.
+  const visibleBuiltIns =
+    !isAdmin && isStandalonePortal(userCentre)
+      ? builtInCards.filter((card) => card.id !== "hcl-sathee")
+      : builtInCards;
+
   const cards = isAdmin
-    ? [...builtInCards, ...customCards, addDashboardCard]
-    : builtInCards;
+    ? [...builtInCards, ...kendraCards, ...customCards, addDashboardCard]
+    : [...visibleBuiltIns, ...kendraCards];
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#F1F5F9] font-sans text-black">
@@ -157,6 +177,8 @@ export default function DashboardSelect({ openHCLSathee, onLogout, userRole, use
                         ? "bg-blue-100 text-blue-700"
                         : badge === "Custom"
                           ? "bg-emerald-100 text-emerald-700"
+                          : badge === "Kendra"
+                            ? "bg-amber-100 text-amber-800"
                           : "bg-slate-100 text-slate-700"
                     }`}
                   >
