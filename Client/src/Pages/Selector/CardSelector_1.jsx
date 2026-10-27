@@ -159,12 +159,12 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
           You are logged in successfully. Select where you want to continue.
         </p>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:mt-10 lg:gap-7">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-10 lg:grid-cols-3 lg:gap-5">
           {cards.map(
             ({ id, title, subtitle, icon, buttonText, onClick, badge, removable, partner, locked }) => (
               <article
                 key={id}
-                className={`group relative flex min-w-0 flex-col rounded-2xl border p-6 shadow-sm transition duration-200 lg:p-7 ${
+                className={`group relative flex min-w-0 flex-col rounded-2xl border p-5 shadow-sm transition duration-200 ${
                   locked
                     ? "border-slate-200 bg-slate-50/80"
                     : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
@@ -183,11 +183,11 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
 
                 <div className="flex items-start justify-between gap-3">
                   <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-1.5 text-[#3B82F6] ${
+                    className={`flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-1 text-[#3B82F6] ${
                       locked ? "opacity-60 grayscale" : ""
                     }`}
                   >
-                    {icon(26)}
+                    {icon(22)}
                   </div>
 
                   <span
@@ -207,11 +207,11 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                   </span>
                 </div>
 
-                <h2 className="mt-5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                <h2 className="mt-4 text-lg font-bold tracking-tight text-slate-900">
                   {title}
                 </h2>
 
-                <p className="mt-1.5 truncate text-sm leading-relaxed text-slate-600">
+                <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-600">
                   {subtitle}
                 </p>
                 {partner ? (
@@ -221,9 +221,9 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                 ) : null}
 
                 {locked ? (
-                  <div className="mt-6">
-                    <span className="inline-flex w-fit cursor-not-allowed items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-400">
-                      <Lock size={16} />
+                  <div className="mt-auto pt-4">
+                    <span className="inline-flex w-fit cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-400">
+                      <Lock size={15} />
                       No access
                     </span>
                     <p className="mt-2 text-xs text-slate-500">
@@ -231,17 +231,19 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                     </p>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={onClick}
-                    className="mt-6 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#3B82F6] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                  >
-                    {buttonText}
-                    <ArrowUpRight
-                      size={18}
-                      className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    />
-                  </button>
+                  <div className="mt-auto pt-4">
+                    <button
+                      type="button"
+                      onClick={onClick}
+                      className="inline-flex w-fit items-center gap-2 rounded-xl bg-[#3B82F6] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+                    >
+                      {buttonText}
+                      <ArrowUpRight
+                        size={16}
+                        className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      />
+                    </button>
+                  </div>
                 )}
               </article>
             )
