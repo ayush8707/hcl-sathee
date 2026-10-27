@@ -54,14 +54,14 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     {
       id: "hcl-sathee",
       title: "HCL SATHEE",
-      subtitle: "Open your internal HCL SATHEE analytics workspace",
+      subtitle: "SATHEE Kendras in Rajasthan, Jharkhand and Madhya Pradesh",
       icon: (size) => <LogoIcon src={HCLLogo} alt="HCL" size={size} />,
       buttonText: "Open HCL SATHEE",
       onClick: openHCLSathee,
       partner: "HCL",
       // Users of a standalone Kendra (e.g. Barmer) see HCL SATHEE but can't open it.
       locked: !isAdmin && isStandalonePortal(userCentre),
-      badge: "Internal",
+      badge: "Partner",
     },
     {
       id: "sathee",
@@ -89,7 +89,7 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     partner: portal.partner,
     buttonText: "Open Kendra",
     onClick: () => openPortal?.(portal.title),
-    badge: "Kendra",
+    badge: "Partner",
     locked: !canAccessPortal(userCentre, portal.title, userRole),
   }));
 
@@ -194,12 +194,10 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                     className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                       removable ? "mr-6 " : ""
                     }${
-                      badge === "Internal"
+                      badge === "Partner"
                         ? "bg-blue-100 text-blue-700"
                         : badge === "Custom"
                           ? "bg-emerald-100 text-emerald-700"
-                          : badge === "Kendra"
-                            ? "bg-amber-100 text-amber-800"
                           : "bg-slate-100 text-slate-700"
                     }`}
                   >
