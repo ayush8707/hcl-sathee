@@ -38,12 +38,12 @@ function StatusTag({ active }) {
   );
 }
 
-function RoleTag({ role, roleBadge }) {
+function RoleTag({ role, roleBadge, formatRole = (value) => value }) {
   const badge = roleBadge[role] ?? DEFAULT_BADGE;
   return (
     <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.bg}`}>
       {badge.icon}
-      {role}
+      {formatRole(role)}
     </span>
   );
 }
@@ -93,6 +93,7 @@ const UserTable = ({
   users,
   allUsersCount,
   roleBadge,
+  formatRole,
   avatarColor,
   onDeleteUser,
   onResendInvite,
@@ -149,7 +150,7 @@ const UserTable = ({
                     </p>
                   </td>
                   <td className="px-4 py-3.5">
-                    <RoleTag role={user.role} roleBadge={roleBadge} />
+                    <RoleTag role={user.role} roleBadge={roleBadge} formatRole={formatRole} />
                   </td>
                   <td className="px-4 py-3.5">
                     <StatusTag active={user.hasPassword} />
@@ -178,7 +179,7 @@ const UserTable = ({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <RoleTag role={user.role} roleBadge={roleBadge} />
+                    <RoleTag role={user.role} roleBadge={roleBadge} formatRole={formatRole} />
                     <StatusTag active={user.hasPassword} />
                   </div>
                   <p className="mt-2 break-all text-sm text-slate-600">{user.email}</p>

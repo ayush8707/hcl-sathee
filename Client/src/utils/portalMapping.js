@@ -81,3 +81,11 @@ const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentre
 
 export const isStandalonePortal = (portalOrCentreName = "") =>
   STANDALONE_KEYS.has(getCanonicalCentreKey(portalOrCentreName));
+
+// The partner role is stored as "HCL PARTNER" for every centre. Standalone
+// Kendras are funded by other CSR partners, so their screens call it
+// "CSR PARTNER" instead. Display only — the stored role never changes.
+export const displayRole = (role = "", portalName = "") =>
+  isStandalonePortal(portalName) && String(role || "").trim().toUpperCase() === "HCL PARTNER"
+    ? "CSR PARTNER"
+    : role;

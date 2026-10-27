@@ -5,7 +5,7 @@ const ROLE_TONES = {
   "HCL PARTNER": "bg-purple-50 text-purple-700 ring-purple-200",
 };
 
-const UserFilter = ({ filters, activeFilter, setActiveFilter, roleCount }) => {
+const UserFilter = ({ filters, activeFilter, setActiveFilter, roleCount, formatRole = (role) => role }) => {
   return (
     <div className="flex flex-wrap gap-2">
       {filters.map((f) => {
@@ -21,7 +21,7 @@ const UserFilter = ({ filters, activeFilter, setActiveFilter, roleCount }) => {
               active ? "bg-blue-600 text-white ring-blue-600 shadow-sm" : `${tone} hover:brightness-95`
             }`}
           >
-            {f}
+            {formatRole(f)}
             <span
               className={`rounded-full px-1.5 text-xs font-bold ${
                 active ? "bg-white/25 text-white" : "bg-white/70"
