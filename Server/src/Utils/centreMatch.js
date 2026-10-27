@@ -68,6 +68,11 @@ const isSatheeMitraRole = (role = "") => {
 // STANDALONE_PORTALS in Client/src/utils/portalMapping.js.
 const STANDALONE_CENTRE_KEYS = new Set(["SATHEEBARMER"]);
 
+// Name of the platform a centre belongs to, as shown to its users.
+const STANDALONE_PLATFORM_NAMES = { SATHEEBARMER: "SATHEE Barmer" };
+const platformNameForCentre = (centre = "") =>
+  STANDALONE_PLATFORM_NAMES[getCanonicalCentreKey(centre ?? "")] || "HCL SATHEE";
+
 /**
  * The partner role is stored as "HCL PARTNER" everywhere. Standalone Kendras
  * are funded by other CSR partners, so text shown to their users says
@@ -100,4 +105,5 @@ module.exports = {
   isPortalViewerRole,
   filterByUserCentre,
   displayRoleForCentre,
+  platformNameForCentre,
 };
