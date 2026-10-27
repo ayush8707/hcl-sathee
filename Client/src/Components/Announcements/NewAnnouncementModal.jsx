@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getCanonicalCentreKey } from "../../utils/portalMapping";
+import { getCanonicalCentreKey, isSamePlatform } from "../../utils/portalMapping";
 import { fetchCentres } from "../../services/centres";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 
@@ -72,15 +72,19 @@ export default function NewAnnouncementModal({
   // Show every known centre plus any already-selected centre that isn't in the
   // fetched list yet (e.g. while centres are still loading, or a removed centre
   // referenced by an old announcement).
+  // Only this portal's platform is offered: HCL portals list HCL centres,
+  // SATHEE Barmer lists only itself.
   const displayCentres = useMemo(() => {
-    const merged = [...centreOptions];
+    const merged = defaultCentre
+      ? centreOptions.filter((option) => isSamePlatform(option, defaultCentre))
+      : [...centreOptions];
     for (const centre of form.centres) {
       if (!merged.some((option) => sameCentre(option, centre))) {
         merged.push(centre);
       }
     }
     return merged;
-  }, [centreOptions, form.centres]);
+  }, [centreOptions, form.centres, defaultCentre]);
   const needsReupload =
     Boolean(editData?.attachmentName) && !editData?.attachmentUrl;
 

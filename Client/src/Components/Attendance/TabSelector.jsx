@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Building2, CalendarDays, CalendarRange, CalendarClock, UserRound, UsersRound, BadgeCheck } from "lucide-react";
 import { fetchCentres } from "../../services/centres";
+import { isSamePlatform } from "../../utils/portalMapping";
 
 const DEFAULT_CENTRE_OPTIONS = [
   "HCL RAJASTHAN",
@@ -53,6 +54,7 @@ export default function TabSelector({
   mitraTabLabel = "SATHEE MITRA",
   onGo,
   canGo = false,
+  portalName = "",
 }) {
   const [centreOptions, setCentreOptions] = useState(DEFAULT_CENTRE_OPTIONS);
 
@@ -131,7 +133,7 @@ export default function TabSelector({
                 aria-label="Select centre"
               >
                 <option value="">Choose a centre</option>
-                {centreOptions.map((centre) => (
+                {centreOptions.filter((centre) => !portalName || isSamePlatform(centre, portalName)).map((centre) => (
                   <option key={centre} value={centre} className="text-slate-900">
                     {centre}
                   </option>

@@ -848,6 +848,7 @@ export default function AdminAttendance({
           showCentreFilter={centreFilterEnabled}
           showMitraTab={false}
           mitraTabLabel={mitraTabLabel}
+          portalName={portalName}
           onGo={() => {
             setAppliedType(activeTab);
             setAppliedCentre(centreScope);
