@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { getCentreValueFromPortal } from "../../utils/portalMapping";
+import { getCentreValueFromPortal, displayRole } from "../../utils/portalMapping";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { isValidPhone10, sanitizePhoneInput } from "../../utils/phone";
 
@@ -143,7 +143,7 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
               >
                 <option value="ADMIN">ADMIN</option>
                 <option value="SATHEE MITRA">SATHEE MITRA</option>
-                <option value="HCL PARTNER">HCL PARTNER</option>
+                <option value="HCL PARTNER">{displayRole("HCL PARTNER", portalName)}</option>
               </select>
             </div>
 

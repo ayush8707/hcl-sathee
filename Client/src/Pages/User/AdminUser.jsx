@@ -7,7 +7,7 @@ import UserTable from "../../Components/User/UserTable";
 import NewUser from "../../Components/User/NewUser";
 import { MainLayout } from "../../Components/MainLayout";
 import { createUser, fetchUsers, removeUser, resendInvite } from "../../services/users";
-import { matchesPortalCentre } from "../../utils/portalMapping";
+import { displayRole, matchesPortalCentre } from "../../utils/portalMapping";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getInitials } from "../../utils/studentMetrics";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
@@ -221,6 +221,7 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
 
         <UserFilter
           filters={ROLE_FILTERS}
+          formatRole={(role) => displayRole(role, portalName)}
           activeFilter={activeFilter}
           setActiveFilter={setActiveFilter}
           roleCount={roleCount}
@@ -276,6 +277,7 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
             users={sortedUsers}
             allUsersCount={roleCount("All Users")}
             roleBadge={roleBadge}
+            formatRole={(role) => displayRole(role, portalName)}
             avatarColor={avatarColor}
             onDeleteUser={handleDeleteUser}
             onResendInvite={handleResendInvite}
