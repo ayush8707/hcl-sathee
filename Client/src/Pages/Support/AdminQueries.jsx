@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MainLayout } from "../../Components/MainLayout";
 import { fetchSupportQueries, replyToSupportQuery } from "../../services/supportQueries";
 import { getApiErrorMessage } from "../../utils/apiRequest";
-import { displayRole } from "../../utils/portalMapping";
+import { displayRole, getCentreValueFromPortal, isStandalonePortal } from "../../utils/portalMapping";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -33,7 +33,7 @@ export default function AdminQueries({ portalName, navItems, activeNav, onNavCha
     setError("");
 
     try {
-      const data = await fetchSupportQueries();
+      const data = await fetchSupportQueries(getCentreValueFromPortal(portalName));
       setQueries(data);
     } catch (loadError) {
       console.error("Fetch support queries error:", loadError);
@@ -46,7 +46,7 @@ export default function AdminQueries({ portalName, navItems, activeNav, onNavCha
 
   useEffect(() => {
     loadQueries();
-  }, [isCustomCentre]);
+  }, [isCustomCentre, portalName]);
 
   const totalPending = useMemo(
     () => queries.filter((query) => (query.status || "Open") !== "Replied").length,
@@ -89,7 +89,9 @@ export default function AdminQueries({ portalName, navItems, activeNav, onNavCha
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Queries</h1>
               <p className="text-sm text-slate-600">
-                Review partner questions and reply directly from here.
+                {isStandalonePortal(portalName)
+                  ? "Questions from this Kendra's CSR partners. Reply directly from here."
+                  : "Questions from HCL SATHEE partners across all HCL centres. Reply directly from here."}
               </p>
             </div>
             <div className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200">

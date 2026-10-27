@@ -216,11 +216,12 @@ const renderWelcomeEmail = ({ name, role, link, platform = "HCL SATHEE" }) => {
   return { subject: `Set up your ${platform} account`, text, html };
 };
 
-const renderSupportQueryEmail = ({ partnerName, title, description }) => {
+const renderSupportQueryEmail = ({ partnerName, title, description, platform = "HCL SATHEE" }) => {
+  const isHcl = platform === "HCL SATHEE";
   const text = [
     "Hello Admin,",
     "",
-    `A new query has been submitted by ${partnerName}.`,
+    `A new query has been submitted by ${partnerName}${isHcl ? "" : ` (${platform})`}.`,
     "",
     `Title: ${title}`,
     "",
@@ -231,16 +232,21 @@ const renderSupportQueryEmail = ({ partnerName, title, description }) => {
 
   const html = layout(`
       <p style="margin:0 0 14px;">Hello Admin,</p>
-      <p style="margin:0 0 14px;">A new query was submitted by <strong>${escapeHtml(partnerName)}</strong>.</p>
+      <p style="margin:0 0 14px;">A new query was submitted by <strong>${escapeHtml(partnerName)}</strong>${isHcl ? "" : ` (${escapeHtml(platform)})`}.</p>
       <p style="margin:0 0 6px;"><strong>Title:</strong> ${escapeHtml(title)}</p>
       <p style="margin:0 0 6px;"><strong>Description:</strong></p>
       <div style="${boxStyle}">${escapeHtml(description)}</div>
-      <p style="margin:14px 0 0;">Please log in to the admin portal to review and reply.</p>`);
+      <p style="margin:14px 0 0;">Please log in to the admin portal to review and reply.</p>`,
+    `${platform} Portal`);
 
-  return { subject: "New partner query submitted", text, html };
+  return {
+    subject: isHcl ? "New partner query submitted" : `New query from ${platform}`,
+    text,
+    html,
+  };
 };
 
-const renderSupportQueryReplyEmail = ({ adminName, title, message }) => {
+const renderSupportQueryReplyEmail = ({ adminName, title, message, platform = "HCL SATHEE" }) => {
   const text = [
     "Hello,",
     "",
@@ -255,7 +261,8 @@ const renderSupportQueryReplyEmail = ({ adminName, title, message }) => {
       <p style="margin:0 0 14px;">Hello,</p>
       <p style="margin:0 0 6px;"><strong>${escapeHtml(adminName)}</strong> replied to your query <strong>${escapeHtml(title)}</strong>:</p>
       <div style="${boxStyle}">${escapeHtml(message)}</div>
-      <p style="margin:14px 0 0;">Log in to the portal to view the full conversation or reply.</p>`);
+      <p style="margin:14px 0 0;">Log in to the portal to view the full conversation or reply.</p>`,
+    `${platform} Portal`);
 
   return { subject: `Re: ${stripLineBreaks(title)}`, text, html };
 };
@@ -294,12 +301,14 @@ async function sendWelcomeEmail(to, name, role, centre) {
   return deliver({ to, ...renderWelcomeEmail({ name, role: shownRole, link, platform }) });
 }
 
-async function sendSupportQueryEmail(to, { partnerName, title, description }) {
-  await deliver({ to, ...renderSupportQueryEmail({ partnerName, title, description }) });
+async function sendSupportQueryEmail(to, { partnerName, title, description, centre }) {
+  const platform = platformNameForCentre(centre);
+  await deliver({ to, ...renderSupportQueryEmail({ partnerName, title, description, platform }) });
 }
 
-async function sendSupportQueryReplyEmail(to, { adminName, title, message }) {
-  await deliver({ to, ...renderSupportQueryReplyEmail({ adminName, title, message }) });
+async function sendSupportQueryReplyEmail(to, { adminName, title, message, centre }) {
+  const platform = platformNameForCentre(centre);
+  await deliver({ to, ...renderSupportQueryReplyEmail({ adminName, title, message, platform }) });
 }
 
 async function sendPasswordResetOtpEmail(to, name, otp) {

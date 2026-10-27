@@ -112,7 +112,7 @@ export default function AdminDashboard({
       })
       .catch(() => isMounted && setPendingLeaves(null));
 
-    fetchSupportQueries()
+    fetchSupportQueries(getCentreValueFromPortal(portalName))
       .then((queries) => {
         if (!isMounted) return;
         setOpenQueries(queries.filter((query) => (query.status || "Open") !== "Replied").length);

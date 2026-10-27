@@ -6,9 +6,9 @@ const VALID_CENTRES = [
   "SATHEE BARMER",
 ];
 
+// Records without a centre (e.g. admin accounts) arrive as null.
 const normalizeCentreValue = (value = "") =>
-  value
-    .toString()
+  String(value ?? "")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z]/g, "");
@@ -70,6 +70,19 @@ const STANDALONE_CENTRE_KEYS = new Set(["SATHEEBARMER"]);
 
 // Name of the platform a centre belongs to, as shown to its users.
 const STANDALONE_PLATFORM_NAMES = { SATHEEBARMER: "SATHEE Barmer" };
+const isStandaloneCentre = (centre = "") =>
+  STANDALONE_CENTRE_KEYS.has(getCanonicalCentreKey(centre ?? ""));
+
+/**
+ * True when an item's centre belongs to the same platform as `centre`:
+ * a standalone Kendra only matches itself; every other centre (including
+ * records with no centre) belongs to HCL SATHEE.
+ */
+const samePlatformAs = (itemCentre, centre) =>
+  isStandaloneCentre(centre)
+    ? matchesCentre(itemCentre, centre)
+    : !isStandaloneCentre(itemCentre);
+
 const platformNameForCentre = (centre = "") =>
   STANDALONE_PLATFORM_NAMES[getCanonicalCentreKey(centre ?? "")] || "HCL SATHEE";
 
@@ -106,4 +119,6 @@ module.exports = {
   filterByUserCentre,
   displayRoleForCentre,
   platformNameForCentre,
+  isStandaloneCentre,
+  samePlatformAs,
 };

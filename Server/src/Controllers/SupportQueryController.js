@@ -1,7 +1,7 @@
 const { fail, ok, wrap } = require("../Utils/httpResponse");
 const User = require("../Models/User");
 const SupportQuery = require("../Models/SupportQuery");
-const { isAdminRole } = require("../Utils/centreMatch");
+const { isAdminRole, samePlatformAs } = require("../Utils/centreMatch");
 const { sendToTokens } = require("../Utils/pushNotifications");
 const { sendSupportQueryEmail, sendSupportQueryReplyEmail } = require("../Utils/sendEmail");
 const { buildSupportQueryNotificationPayload } = require("../Utils/supportQueries");
@@ -53,6 +53,7 @@ exports.createSupportQuery = wrap(
             partnerName: req.user?.name || req.user?.email || "Partner user",
             title,
             description,
+            centre: req.user?.centre || null,
           });
         } catch (emailErr) {
           console.error("Support query email failed:", emailErr.message || emailErr);
@@ -72,9 +73,17 @@ exports.createSupportQuery = wrap(
   }
 );
 
+/**
+ * GET /api/support-queries?centre=<portal centre>
+ * With a centre, only that platform's queries come back: a standalone Kendra
+ * (e.g. SATHEE Barmer) gets its own queries, any HCL centre gets all HCL
+ * SATHEE queries. Without one, every query is returned.
+ */
 exports.getSupportQueries = wrap(
-  async (_req, res) => {
-    const queries = await SupportQuery.findAll();
+  async (req, res) => {
+    const all = await SupportQuery.findAll();
+    const centre = String(req.query?.centre || "").trim();
+    const queries = centre ? all.filter((q) => samePlatformAs(q.centre, centre)) : all;
     return ok(res, { queries });
   },
   {
@@ -130,6 +139,7 @@ exports.replyToSupportQuery = wrap(
           adminName,
           title: updated.title,
           message,
+          centre: updated.centre,
         });
       } catch (emailErr) {
         console.error("Support query reply email failed:", emailErr.message || emailErr);
