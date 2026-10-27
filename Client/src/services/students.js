@@ -25,13 +25,10 @@ const parseStudent = (student) => ({
   attendances: Array.isArray(student.attendances) ? student.attendances : [],
 });
 
+// Every student the user may see. The server returns 200 at a time, so this
+// follows its pages; stopping at the first page used to hide everyone past
+// the newest 200.
 export const fetchStudents = async () => {
-  const response = await api.get("/api/students");
-  return (response.data.students ?? []).map(parseStudent);
-};
-
-// Every student, following the server's pages (it returns 200 at a time).
-export const fetchAllStudents = async () => {
   const students = [];
   let cursor;
   for (let page = 0; page < 100; page += 1) {
@@ -42,6 +39,8 @@ export const fetchAllStudents = async () => {
   }
   return students;
 };
+
+export const fetchAllStudents = fetchStudents;
 
 export const createStudent = async (payload) => {
   const response = await api.post("/api/students", payload);
