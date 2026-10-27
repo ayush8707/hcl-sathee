@@ -90,8 +90,17 @@ function SplitLayout({ onLoginSuccess }) {
   const { t } = useLoginLanguage();
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-white lg:grid lg:grid-cols-2">
-      <aside className="hidden border-r border-slate-200 bg-white lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24">
-        <div className="max-w-md">
+      <aside className="relative hidden overflow-hidden border-r border-slate-200 bg-white lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24">
+        {/* Very light SATHEE logo behind the brand panel. Cropped to the central
+            sun/people/book so the logo's small text doesn't show as smudges. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-40 top-1/2 h-[620px] w-[620px] -translate-y-1/2 select-none overflow-hidden rounded-full opacity-[0.06]"
+        >
+          <img src={logo} alt="" className="h-full w-full scale-[1.6] object-cover" />
+        </div>
+
+        <div className="relative max-w-md">
           <div className="h-28 w-28 overflow-hidden rounded-full border border-slate-200 bg-white shadow-lg">
             <img src={logo} alt="SATHEE logo" className="h-full w-full rounded-full object-cover" />
           </div>
