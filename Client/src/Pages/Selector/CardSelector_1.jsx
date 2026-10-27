@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowUpRight, Globe, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
+import HeroFutureEnergiesLogo from "../../assets/hero-future-energies.png";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
 import {
   addCustomDashboard,
@@ -10,15 +11,20 @@ import {
 } from "../../utils/customDashboards";
 import { canAccessPortal, isStandalonePortal, STANDALONE_PORTALS } from "../../utils/portalMapping";
 
-function LogoIcon({ src, alt }) {
+function LogoIcon({ src, alt, contain = false }) {
   return (
     <img
       src={src}
       alt={alt}
-      className="h-full w-full rounded-md object-cover"
+      className={`h-full w-full rounded-md ${contain ? "bg-white object-contain" : "object-cover"}`}
     />
   );
 }
+
+// Logos of the CSR partners that fund standalone Kendras.
+const PARTNER_LOGOS = {
+  "Hero Future Energies": HeroFutureEnergiesLogo,
+};
 
 // SATHEE web app entry point. Swap for the real URL after deployment/domain.
 const SATHEE_APP_URL = "http://localhost:5174/";
@@ -72,7 +78,13 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     id: portal.title,
     title: portal.label,
     subtitle: portal.subtitle,
-    icon: (size) => <LogoIcon src={SatheeLogo} alt={portal.title} size={size} />,
+    icon: (size) =>
+      PARTNER_LOGOS[portal.partner] ? (
+        <LogoIcon src={PARTNER_LOGOS[portal.partner]} alt={portal.partner} size={size} contain />
+      ) : (
+        <LogoIcon src={SatheeLogo} alt={portal.title} size={size} />
+      ),
+    partner: portal.partner,
     buttonText: "Open Kendra",
     onClick: () => openPortal?.(portal.title),
     badge: "Kendra",
@@ -148,7 +160,7 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
 
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:mt-10 lg:gap-7">
           {cards.map(
-            ({ id, title, subtitle, icon, buttonText, onClick, badge, removable }) => (
+            ({ id, title, subtitle, icon, buttonText, onClick, badge, removable, partner }) => (
               <article
                 key={id}
                 className="group relative flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md lg:p-7"
@@ -193,6 +205,11 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                 <p className="mt-1.5 truncate text-sm leading-relaxed text-slate-600">
                   {subtitle}
                 </p>
+                {partner ? (
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Supported by <span className="text-slate-700">{partner}</span>
+                  </p>
+                ) : null}
 
                 <button
                   type="button"
