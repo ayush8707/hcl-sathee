@@ -4,6 +4,7 @@ import { MainLayout } from "../../Components/MainLayout";
 import { fetchAdminUsers } from "../../services/users";
 import api from "../../services/apiClient";
 import { getApiErrorMessage } from "../../utils/apiRequest";
+import { displayRole } from "../../utils/portalMapping";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -190,7 +191,7 @@ export default function QueryAndSupport({
                     {admins.map((admin) => {
                       const email = admin.email || "";
                       const gmailLink = email
-                        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(title || "Query from HCL Partner")}&body=${encodeURIComponent(
+                        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(title || `Query from ${displayRole("HCL PARTNER", portalName)}`)}&body=${encodeURIComponent(
                             `Hello ${admin.name || "Admin"},\n\n${description ? `I need help with:\n${description}\n\n` : ""}Regards,\n${userName || "Partner User"}\n${userEmail || ""}`
                           )}`
                         : "";

@@ -604,7 +604,7 @@ export default function CentreReport({
         fetchMitraAttendanceRange(range.from, range.to),
         fetchVishistAttendanceRange(range.from, range.to, portalName),
         fetchLeaveRequests(),
-        fetchSupportQueries(),
+        fetchSupportQueries(getCentreValueFromPortal(portalName)),
         fetchAnnouncements(),
       ]);
       const [users, mitraRecords, vishistRecords, leaves, queries, announcements] = activityResults.map((r) =>

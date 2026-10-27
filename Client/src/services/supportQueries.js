@@ -1,7 +1,11 @@
 import api from "./apiClient";
 
-export const fetchSupportQueries = async () => {
-  const response = await api.get("/api/support-queries");
+// Pass the portal's centre to get only that platform's queries (SATHEE Barmer
+// vs HCL SATHEE); leave it out to get every query.
+export const fetchSupportQueries = async (centre) => {
+  const response = await api.get("/api/support-queries", {
+    params: centre ? { centre } : undefined,
+  });
   return response.data.queries ?? [];
 };
 
