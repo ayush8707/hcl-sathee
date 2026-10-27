@@ -187,7 +187,7 @@ exports.addUser = wrap(
       emailError = "Skipped welcome email for @example.com addresses";
     } else {
       try {
-        await sendWelcomeEmail(normalizedEmail, name.trim(), role);
+        await sendWelcomeEmail(normalizedEmail, name.trim(), role, normalizedCentre);
         emailSent = true;
       } catch (err) {
         emailError = formatEmailError(err);
@@ -226,7 +226,7 @@ exports.resendInvite = wrap(
     }
 
     try {
-      await sendWelcomeEmail(user.email, user.name, user.role);
+      await sendWelcomeEmail(user.email, user.name, user.role, user.centre);
       return ok(res, { message: "Invite resent successfully", emailSent: true });
     } catch (err) {
       const emailError = formatEmailError(err);

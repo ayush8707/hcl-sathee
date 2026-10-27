@@ -64,6 +64,20 @@ const isSatheeMitraRole = (role = "") => {
   );
 };
 
+// Kendras that are their own platform (not HCL SATHEE). Mirrors
+// STANDALONE_PORTALS in Client/src/utils/portalMapping.js.
+const STANDALONE_CENTRE_KEYS = new Set(["SATHEEBARMER"]);
+
+/**
+ * The partner role is stored as "HCL PARTNER" everywhere. Standalone Kendras
+ * are funded by other CSR partners, so text shown to their users says
+ * "CSR PARTNER". Display only — never use this for permission checks.
+ */
+const displayRoleForCentre = (role = "", centre = "") =>
+  isHclPartnerRole(role) && STANDALONE_CENTRE_KEYS.has(getCanonicalCentreKey(centre ?? ""))
+    ? "CSR PARTNER"
+    : role;
+
 const isPortalViewerRole = (role = "") =>
   isAdminRole(role) || isHclPartnerRole(role) || isSatheeMitraRole(role);
 
@@ -85,4 +99,5 @@ module.exports = {
   isSatheeMitraRole,
   isPortalViewerRole,
   filterByUserCentre,
+  displayRoleForCentre,
 };
