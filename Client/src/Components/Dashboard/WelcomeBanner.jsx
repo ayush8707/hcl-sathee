@@ -1,5 +1,7 @@
-import { Clock } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import { getSession } from "../../utils/authSession";
+import { getCentreId, getCentrePlace } from "../../utils/centreDirectory";
+import { getPortalPartner } from "../../config/csrPartners";
 
 const formatLogin = (value) =>
   new Date(value).toLocaleString("en-IN", {
@@ -18,6 +20,11 @@ export function WelcomeBanner({ portalName, userName }) {
   const formattedLastLogin =
     lastLoginAt === undefined ? null : lastLoginAt ? formatLogin(lastLoginAt) : "This is your first login";
 
+  // Kendra details; centres added from the State Portals page have none yet.
+  const kendraId = getCentreId(portalName);
+  const place = getCentrePlace(portalName);
+  const partner = kendraId ? getPortalPartner(portalName) : null;
+
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <div className="absolute inset-y-0 left-0 w-1.5 bg-[#3B82F6]" />
@@ -34,6 +41,29 @@ export function WelcomeBanner({ portalName, userName }) {
           <p className="text-base font-medium text-slate-600">
             {portalName ? `${portalName} Portal` : "HCL SATHEE Portal"}
           </p>
+
+          {kendraId ? (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                {kendraId}
+              </span>
+              {place ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin size={14} className="text-slate-400" />
+                  {place}
+                </span>
+              ) : null}
+              {partner ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="text-slate-500">Supported by</span>
+                  {partner.logo ? (
+                    <img src={partner.logo} alt="" className="h-6 w-auto max-w-[72px] rounded bg-white object-contain" />
+                  ) : null}
+                  <span className="font-medium text-slate-700">{partner.name}</span>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
