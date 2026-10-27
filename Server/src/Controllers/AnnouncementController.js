@@ -5,6 +5,8 @@ const {
   isHclPartnerRole,
   isSatheeMitraRole,
   matchesCentre,
+  samePlatformAs,
+  platformNameForCentre,
 } = require("../Utils/centreMatch");
 const User = require("../Models/User");
 const { sendToTokens } = require("../Utils/pushNotifications");
@@ -51,6 +53,17 @@ const filterAnnouncementsForUser = (items, user) => {
   });
 };
 
+/** An announcement may target several centres, but never across platforms
+ *  (e.g. HCL SATHEE and SATHEE Barmer). Returns an error message or null. */
+const crossPlatformError = (centre, otherCentres) => {
+  const targets = [centre, ...(otherCentres || [])].filter((c) => String(c || "").trim());
+  if (targets.length < 2) return null;
+  const mixed = targets.some((c) => !samePlatformAs(c, targets[0]));
+  return mixed
+    ? `An announcement can't be shared between ${platformNameForCentre(targets[0])} and other platforms`
+    : null;
+};
+
 exports.getAnnouncements = wrap(
   async (req, res) => {
     const announcementsPage = await Announcement.findAll({
@@ -71,6 +84,8 @@ exports.addAnnouncement = wrap(
     if (!String(title || "").trim() || !String(description || "").trim()) {
       return fail(res, 400, "Title and description are required");
     }
+    const platformError = crossPlatformError(centre, otherCentres);
+    if (platformError) return fail(res, 400, platformError);
 
     let attachment = {
       attachmentName: null,
@@ -158,6 +173,9 @@ exports.updateAnnouncement = wrap(
     if (req.file) {
       Object.assign(patch, await Announcement.uploadAttachment(req.file));
     }
+
+    const platformError = crossPlatformError(patch.centre, patch.otherCentres);
+    if (platformError) return fail(res, 400, platformError);
 
     const announcement = await Announcement.update(id, patch);
     if (!announcement) {

@@ -82,6 +82,13 @@ const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentre
 export const isStandalonePortal = (portalOrCentreName = "") =>
   STANDALONE_KEYS.has(getCanonicalCentreKey(portalOrCentreName));
 
+// True when `centre` belongs to the same platform as `portalOrCentre`: a
+// standalone Kendra only matches itself; HCL centres match each other.
+export const isSamePlatform = (centre, portalOrCentre) =>
+  isStandalonePortal(portalOrCentre)
+    ? getCanonicalCentreKey(centre) === getCanonicalCentreKey(portalOrCentre)
+    : !isStandalonePortal(centre);
+
 // The partner role is stored as "HCL PARTNER" for every centre. Standalone
 // Kendras are funded by other CSR partners, so their screens call it
 // "CSR PARTNER" instead. Display only — the stored role never changes.
