@@ -59,7 +59,10 @@ jobs:
         run: |
           stamp=$(date -u +%Y-%m-%d)
           echo "STAMP=$stamp" >> "$GITHUB_ENV"
-          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+          # Pasted secrets often carry a trailing newline or spaces; a URL never
+          # contains raw whitespace, so drop it rather than fail on "postgres\n".
+          db_url=$(printf '%s' "$SUPABASE_DB_URL" | tr -d '[:space:]')
+          /usr/lib/postgresql/17/bin/pg_dump "$db_url" \
             --schema=public --schema=platform_views \
             --no-owner --no-privileges \
             --format=custom \
