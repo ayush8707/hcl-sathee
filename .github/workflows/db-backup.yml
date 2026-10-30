@@ -1,0 +1,91 @@
+# Nightly backup of the Supabase database.
+#
+# Every night GitHub copies the whole database (all tables and data),
+# encrypts the copy with BACKUP_PASSPHRASE, and keeps it for 30 days under
+# Actions -> "Database backup" -> a run -> Artifacts.
+#
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_DB_URL     Supabase -> Connect -> "Session pooler" connection string,
+#                       with [YOUR-PASSWORD] replaced by the database password.
+#   BACKUP_PASSPHRASE   Any long password you choose. Keep it safe: without it
+#                       the backups cannot be opened.
+#
+# How to restore: see Server/supabase/BACKUPS.md.
+
+name: Database backup
+
+on:
+  schedule:
+    - cron: "30 20 * * *" # 02:00 India time, every day
+  workflow_dispatch: {} # "Run workflow" button for a backup right now
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check secrets are set
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_DB_URL" ] || missing="$missing SUPABASE_DB_URL"
+          [ -n "$BACKUP_PASSPHRASE" ] || missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. See .github/workflows/db-backup.yml."
+            exit 1
+          fi
+
+      # Supabase runs a recent PostgreSQL; pg_dump must be at least as new.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          stamp=$(date -u +%Y-%m-%d)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --schema=public --schema=platform_views \
+            --no-owner --no-privileges \
+            --format=custom \
+            --file="sathee-db-$stamp.dump"
+          ls -lh "sathee-db-$stamp.dump"
+          # Quick sanity check: the copy must contain the main tables.
+          /usr/lib/postgresql/17/bin/pg_restore --list "sathee-db-$stamp.dump" > contents.txt
+          for t in users students support_queries; do
+            grep -q "TABLE DATA public $t " contents.txt || { echo "::error::Backup is missing table $t"; exit 1; }
+          done
+
+      - name: Encrypt backup
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "sathee-db-$STAMP.dump.gpg" "sathee-db-$STAMP.dump" <<< "$BACKUP_PASSPHRASE"
+          # Only the encrypted copy leaves this machine.
+          rm -f "sathee-db-$STAMP.dump" contents.txt
+          ls -lh "sathee-db-$STAMP.dump.gpg"
+
+      - name: Keep backup for 30 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: sathee-db-${{ env.STAMP }}
+          path: sathee-db-${{ env.STAMP }}.dump.gpg
+          retention-days: 30
+          if-no-files-found: error
