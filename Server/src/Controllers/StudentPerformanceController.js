@@ -564,10 +564,14 @@ exports.getAttendanceDetail = wrap(
   async (req, res) => {
     const from = toDateOnly(req.query.from);
     const to = toDateOnly(req.query.to) || from;
-    const centre = req.query.centre || null;
+    // Admins may ask for any centre; everyone else only sees their own.
+    const centre = isAdminRole(req.user?.role) ? req.query.centre || null : req.user?.centre || null;
 
     if (!from || !to) {
       return fail(res, 400, "from and to dates are required");
+    }
+    if (!centre && !isAdminRole(req.user?.role)) {
+      return ok(res, { from, to, records: [] });
     }
 
     const records = await DailySubjectAttendance.findByDateRange(from, to, centre);

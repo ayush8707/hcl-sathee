@@ -1,4 +1,4 @@
-import { Search, UserPlus, FileSpreadsheet } from "lucide-react";
+import { Download, Search, UserPlus, FileSpreadsheet } from "lucide-react";
 import { COURSE_OPTIONS } from "../../utils/courseStyles";
 
 const controlClass =
@@ -15,6 +15,8 @@ export default function StudentToolbar({
   onSortDirectionChange,
   onAddStudent,
   onImportStudents,
+  onExport,
+  exportCount = 0,
   readOnly = false,
 }) {
   return (
@@ -59,8 +61,21 @@ export default function StudentToolbar({
         <option value="date:asc">Oldest first</option>
       </select>
 
+      <div className="flex items-center gap-2 sm:ml-auto">
+        {onExport ? (
+          <button
+            type="button"
+            onClick={onExport}
+            disabled={!exportCount}
+            title="Download the students shown as an Excel file"
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={16} />
+            Export
+          </button>
+        ) : null}
       {!readOnly ? (
-        <div className="flex items-center gap-2 sm:ml-auto">
+        <>
           <button
             type="button"
             onClick={onImportStudents}
@@ -77,8 +92,9 @@ export default function StudentToolbar({
             <UserPlus size={16} />
             Add Student
           </button>
-        </div>
+        </>
       ) : null}
+      </div>
     </div>
   );
 }

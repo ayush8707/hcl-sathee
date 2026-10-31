@@ -9,6 +9,7 @@ import { StudentsByCourseChart } from "../../Components/Dashboard/StudentsByCour
 import { QuickActions } from "../../Components/Dashboard/QuickActions";
 import { ExamProgress } from "../../Components/Dashboard/ExamProgress";
 import { StatTiles } from "../../Components/Dashboard/StatTiles";
+import { LowAttendanceCard } from "../../Components/Dashboard/LowAttendanceCard";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
 import { fetchLeaveRequests } from "../../services/leaveRequests";
@@ -175,6 +176,14 @@ export default function AdminDashboard({
             {statsError}
           </div>
         )}
+
+        {!isCustomCentre ? (
+          <LowAttendanceCard
+            students={stats.centreStudents}
+            portalName={portalName}
+            loadingStudents={loadingStats}
+          />
+        ) : null}
 
         <StudentsByCourseChart students={stats.centreStudents} loading={loadingStats} />
 
