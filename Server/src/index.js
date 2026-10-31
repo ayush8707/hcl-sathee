@@ -83,6 +83,19 @@ app.get("/", (_req, res) => {
   });
 });
 
+// Uptime monitoring: 200 only when the server can also reach the database.
+// Answers with a fixed shape and no data, so it is safe to leave public.
+app.get("/api/health", async (_req, res) => {
+  try {
+    const { getSupabase } = require("./config/supabase");
+    const { error } = await getSupabase().from("site_settings").select("key").limit(1);
+    if (error) throw error;
+    return res.json({ ok: true, database: "ok" });
+  } catch {
+    return res.status(503).json({ ok: false, database: "unreachable" });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/centres", centreRoutes);
 app.use("/api/users", userRoutes);
