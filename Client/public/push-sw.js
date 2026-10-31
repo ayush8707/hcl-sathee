@@ -13,7 +13,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title || "Sathee", {
       body: body || "",
-      icon: "/favicon.svg",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
       data: data || {},
     })
   );

@@ -6,6 +6,7 @@ import LoginNotice from "../../Components/Auth/LoginNotice";
 import { LanguageSwitch, LoginLanguageProvider, useLoginLanguage } from "../../i18n/LoginLanguage";
 import { CSR_PARTNERS } from "../../config/csrPartners";
 import { HELP_EMAIL } from "../../config/contact";
+import InstallAppButton from "../../Components/common/InstallAppButton";
 import logo from "../../assets/sathee.svg";
 
 const HIGHLIGHTS = [
@@ -65,7 +66,8 @@ function WatermarkLayout({ onLoginSuccess }) {
         <img src={logo} alt="" className="h-full w-full scale-[1.6] object-cover" />
       </div>
 
-      <div className="relative flex justify-end px-6 pt-5">
+      <div className="relative flex justify-end gap-2 px-6 pt-5">
+        <InstallAppButton className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50" />
         <LanguageSwitch />
       </div>
 
@@ -125,7 +127,8 @@ function SplitLayout({ onLoginSuccess }) {
       </aside>
 
       <div className="flex min-h-screen flex-col">
-        <div className="flex justify-end px-6 pt-5">
+        <div className="flex justify-end gap-2 px-6 pt-5">
+          <InstallAppButton className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50" />
           <LanguageSwitch />
         </div>
         <div className="flex flex-1 items-center justify-center px-6 py-8">

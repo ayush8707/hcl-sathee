@@ -3,6 +3,7 @@ import { ArrowUpRight, Globe, Lock, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
 import SatheeLogo from "../../assets/sathee.svg";
 import { CSR_PARTNERS } from "../../config/csrPartners";
+import InstallAppButton from "../../Components/common/InstallAppButton";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
 import {
   addCustomDashboard,
@@ -136,6 +137,8 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
           </div>
         </div>
 
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <InstallAppButton className="flex items-center gap-2 rounded-2xl bg-white/20 px-3 py-2 text-sm font-medium text-slate-900 transition-colors hover:bg-white/30 sm:px-5" />
         {onLogout ? (
           <button
             type="button"
@@ -146,6 +149,7 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
             <span className="hidden sm:inline">Logout</span>
           </button>
         ) : null}
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
