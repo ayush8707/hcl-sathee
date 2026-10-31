@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 
 const SORT_OPTIONS = [
   { value: "name:asc", label: "Name (A–Z)" },
@@ -7,7 +7,7 @@ const SORT_OPTIONS = [
   { value: "date:asc", label: "Oldest first" },
 ];
 
-export default function UserToolbar({ search, setSearch, sortBy, sortDirection, onSortChange }) {
+export default function UserToolbar({ search, setSearch, sortBy, sortDirection, onSortChange, onExport, exportCount = 0 }) {
   return (
     <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center">
       <div className="relative flex-1">
@@ -39,6 +39,19 @@ export default function UserToolbar({ search, setSearch, sortBy, sortDirection, 
           </option>
         ))}
       </select>
+
+      {onExport ? (
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={!exportCount}
+          title="Download the users shown as an Excel file"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download size={16} />
+          Export
+        </button>
+      ) : null}
     </div>
   );
 }

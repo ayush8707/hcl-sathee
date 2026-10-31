@@ -19,6 +19,7 @@ import {
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { AVATAR_COLORS, getInitials } from "../../utils/studentMetrics";
 import { sortTableRows } from "../../utils/tableSort";
+import { downloadTableXlsx } from "../../utils/exportTable";
 
 const PAGE_SIZE = 8;
 
@@ -192,6 +193,33 @@ export default function Student({
     [filtered, sortBy, sortDirection]
   );
 
+  // Exports exactly what the list shows (current course filter, search and sort).
+  const handleExport = () => {
+    const parent = (s, key) => s.parents?.[key] ?? s[key] ?? "";
+    const added = (value) => (value ? new Date(value).toLocaleDateString("en-GB") : "");
+    downloadTableXlsx({
+      filename: `students-${getCentreId(portalName) || "centre"}-${new Date().toISOString().slice(0, 10)}`,
+      sheetName: "Students",
+      headers: ["Student ID", "Name", "Gender", "Course", "Category", "Email", "Phone", "Father's name", "Father's phone", "Mother's name", "Mother's phone", "Address", "Centre", "Added on"],
+      rows: sortedStudents.map((s) => [
+        s.studentId || "",
+        s.name || "",
+        s.gender || "",
+        s.course || "",
+        s.category || "",
+        s.email || "",
+        s.phone || "",
+        parent(s, "fatherName"),
+        parent(s, "fatherPhone"),
+        parent(s, "motherName"),
+        parent(s, "motherPhone"),
+        s.address || "",
+        s.centre || "",
+        added(s.created_at),
+      ]),
+    });
+  };
+
   const totalStudents = sortedStudents.length;
   const totalPages = Math.max(1, Math.ceil(totalStudents / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -271,6 +299,8 @@ export default function Student({
             onSortDirectionChange={setSortDirection}
             onAddStudent={() => setShowNewStudent(true)}
             onImportStudents={() => setShowImportStudents(true)}
+            onExport={handleExport}
+            exportCount={sortedStudents.length}
             readOnly={readOnly}
           />
 

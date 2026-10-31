@@ -12,6 +12,7 @@ import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getInitials } from "../../utils/studentMetrics";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { sortTableRows } from "../../utils/tableSort";
+import { downloadTableXlsx } from "../../utils/exportTable";
 
 const ROLE_FILTERS = ["All Users", "ADMIN", "SATHEE MITRA", "HCL PARTNER"];
 
@@ -103,6 +104,26 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
     () => sortTableRows(filtered, { sortBy, direction: sortDirection }),
     [filtered, sortBy, sortDirection]
   );
+
+  // Exports exactly what the list shows (current role tab, search and sort). No passwords.
+  const handleExport = () => {
+    const date = (value) => (value ? new Date(value).toLocaleString("en-GB") : "");
+    downloadTableXlsx({
+      filename: `users-${new Date().toISOString().slice(0, 10)}`,
+      sheetName: "Users",
+      headers: ["Name", "Email", "Phone", "Role", "Centre", "Status", "Last login", "Added on"],
+      rows: sortedUsers.map((u) => [
+        u.name || "",
+        u.email || "",
+        u.phone || "",
+        displayRole(u.role, portalName),
+        u.centre || "",
+        u.hasPassword ? "Active" : "Invite pending",
+        u.lastLoginAt ? date(u.lastLoginAt) : "Never",
+        u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB") : "",
+      ]),
+    });
+  };
 
   const roleCount = (role) =>
     role === "All Users"
@@ -271,6 +292,8 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
               setSortBy(nextSortBy);
               setSortDirection(nextDirection);
             }}
+            onExport={handleExport}
+            exportCount={sortedUsers.length}
           />
 
           <UserTable
