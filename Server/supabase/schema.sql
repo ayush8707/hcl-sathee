@@ -195,6 +195,15 @@ create table if not exists mitra_attendances (
   unique (user_id, date)
 );
 create index if not exists idx_mitra_attendance_date on mitra_attendances (date);
+-- GPS location of each check-in (added later; safe to re-run).
+alter table mitra_attendances add column if not exists arrival_lat          double precision;
+alter table mitra_attendances add column if not exists arrival_lng          double precision;
+alter table mitra_attendances add column if not exists arrival_accuracy_m   integer;
+alter table mitra_attendances add column if not exists arrival_distance_m   integer;
+alter table mitra_attendances add column if not exists departure_lat        double precision;
+alter table mitra_attendances add column if not exists departure_lng        double precision;
+alter table mitra_attendances add column if not exists departure_accuracy_m integer;
+alter table mitra_attendances add column if not exists departure_distance_m integer;
 
 -- ---------------------------------------------------------------- vishist_attendances
 -- firestore_id lets the mirror upsert the SAME row on repeat writes (e.g. the

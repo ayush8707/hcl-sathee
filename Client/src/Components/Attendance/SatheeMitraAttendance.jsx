@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, ImageOff, Check, Lock } from "lucide-react";
+import { Clock, ImageOff, Check, Lock, MapPin } from "lucide-react";
+import { mapLink } from "../../utils/geolocation";
 import {
   fetchMitraAttendance,
   fetchMitraAttendanceRange,
@@ -124,13 +125,25 @@ const percentStatusMeta = (percent) => {
   return { statusKey: "low", statusLabel: "Low" };
 };
 
-function TimeCell({ label, time }) {
+function TimeCell({ label, time, location }) {
   return (
     <div className="flex flex-col gap-1 py-1">
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 text-center">
         {formatTime(time)}
       </div>
+      {location ? (
+        <a
+          href={mapLink(location.lat, location.lng)}
+          target="_blank"
+          rel="noreferrer"
+          title={location.accuracyM ? `GPS accuracy ±${location.accuracyM} m` : undefined}
+          className="inline-flex items-center justify-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+        >
+          <MapPin size={12} />
+          {location.distanceM != null ? `${location.distanceM} m from Kendra` : "View on map"}
+        </a>
+      ) : null}
     </div>
   );
 }
@@ -423,10 +436,10 @@ export default function SatheeMitraAttendance({
                     ) : (
                       <>
                         <td className="px-5 py-4 align-middle">
-                          <TimeCell label="Arrival" time={record.arrivalTime} />
+                          <TimeCell label="Arrival" time={record.arrivalTime} location={record.arrivalLocation} />
                         </td>
                         <td className="px-5 py-4 align-middle">
-                          <TimeCell label="Departure" time={record.departureTime} />
+                          <TimeCell label="Departure" time={record.departureTime} location={record.departureLocation} />
                         </td>
                       </>
                     )}

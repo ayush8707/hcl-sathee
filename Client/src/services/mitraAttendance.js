@@ -31,6 +31,7 @@ export const uploadMitraAttendancePhoto = async ({
   date,
   type,
   file,
+  position = null,
 }) => {
   const formData = new FormData();
   formData.append("photo", file);
@@ -41,6 +42,11 @@ export const uploadMitraAttendancePhoto = async ({
   if (centreId) formData.append("centreId", centreId);
   formData.append("date", date);
   formData.append("type", type);
+  if (position) {
+    formData.append("latitude", String(position.latitude));
+    formData.append("longitude", String(position.longitude));
+    if (position.accuracy != null) formData.append("accuracy", String(position.accuracy));
+  }
 
   const response = await api.post("/api/mitra-attendance/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
