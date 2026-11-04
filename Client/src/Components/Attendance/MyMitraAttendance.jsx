@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Camera, Clock, ImageOff } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, CheckCircle2, Clock, ImageOff, LogIn, LogOut, MapPin } from "lucide-react";
 import {
   fetchMitraAttendance,
   uploadMitraAttendancePhoto,
@@ -9,7 +9,9 @@ import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getAuthPayload } from "../../utils/authToken";
 import { compressImageForUpload } from "../../utils/compressImage";
 import { getCentreValueFromPortal } from "../../utils/portalMapping";
+import { getCurrentPosition, mapLink } from "../../utils/geolocation";
 import LiveCameraCapture from "./LiveCameraCapture";
+import MyMonthCalendar from "./MyMonthCalendar";
 
 const formatTime = (value) => {
   if (!value) return "—";
@@ -42,7 +44,7 @@ function LockedField({ label, value }) {
   );
 }
 
-function UploadCard({ title, photoUrl, time, uploading, disabled, onCapture, allowUpload }) {
+function UploadCard({ title, photoUrl, time, location, uploading, disabled, onCapture, allowUpload }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -55,6 +57,25 @@ function UploadCard({ title, photoUrl, time, uploading, disabled, onCapture, all
               {formatTime(time)}
             </span>
           </p>
+          {time ? (
+            location ? (
+              <a
+                href={mapLink(location.lat, location.lng)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline"
+              >
+                <MapPin size={12} />
+                Location saved{location.accuracyM ? ` (±${location.accuracyM} m)` : ""}
+                {location.distanceM != null ? ` · ${location.distanceM} m from Kendra` : ""}
+              </a>
+            ) : (
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                <MapPin size={12} />
+                No location saved
+              </p>
+            )
+          ) : null}
         </div>
         <Camera size={18} className="text-blue-500" />
       </div>
@@ -85,6 +106,53 @@ function UploadCard({ title, photoUrl, time, uploading, disabled, onCapture, all
               : `Take ${title} photo`}
         </button>
       ) : null}
+    </div>
+  );
+}
+
+// One big button that does the next step of the day: check in, then check out.
+function QuickCheckIn({ record, uploadingType, onStart }) {
+  const next = !record?.arrivalTime ? "arrival" : !record?.departureTime ? "departure" : null;
+
+  if (!next) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+        <CheckCircle2 size={28} className="shrink-0 text-emerald-600" />
+        <div>
+          <p className="text-base font-semibold text-emerald-800">You're done for today</p>
+          <p className="text-sm text-emerald-700">
+            Checked in at {formatTime(record.arrivalTime)} · checked out at {formatTime(record.departureTime)}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isArrival = next === "arrival";
+  const Icon = isArrival ? LogIn : LogOut;
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-base font-semibold text-slate-900">
+          {isArrival ? "Start your day" : `Checked in at ${formatTime(record.arrivalTime)}`}
+        </p>
+        <p className="text-sm text-slate-600">
+          {isArrival
+            ? "Tap once: take a selfie at the Kendra. Time and location are saved automatically."
+            : "Leaving the Kendra? Tap to check out."}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onStart(next)}
+        disabled={Boolean(uploadingType)}
+        className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-base font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          isArrival ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        <Icon size={20} />
+        {uploadingType ? "Saving…" : isArrival ? "Check in" : "Check out"}
+      </button>
     </div>
   );
 }
@@ -125,6 +193,17 @@ export default function MyMitraAttendance({
   const [uploadingType, setUploadingType] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [locationNote, setLocationNote] = useState("");
+  const [calendarKey, setCalendarKey] = useState(0);
+  // Location is requested when the camera opens, so it is ready by the time
+  // the photo is taken.
+  const positionRequest = useRef(null);
+
+  const startCapture = (type) => {
+    setLocationNote("");
+    positionRequest.current = getCurrentPosition();
+    setCaptureType(type);
+  };
 
   const resolveFromToken = useCallback(() => {
     const tokenUser = getAuthPayload();
@@ -160,6 +239,7 @@ export default function MyMitraAttendance({
         name: user?.name || fallback.name,
         email: user?.email || fallback.email,
         centre: user?.centre || fallback.centre,
+        availableDays: user?.availableDays || [],
       });
     } catch (err) {
       console.warn("Load current user failed, using session/token:", err?.message || err);
@@ -215,6 +295,8 @@ export default function MyMitraAttendance({
     setError("");
     setMessage("");
     try {
+      const located = (await positionRequest.current) || (await getCurrentPosition());
+      if (located.error) setLocationNote(located.error);
       const compressed = await compressImageForUpload(file);
       const saved = await uploadMitraAttendancePhoto({
         userId: profile.id,
@@ -225,8 +307,10 @@ export default function MyMitraAttendance({
         date,
         type,
         file: compressed,
+        position: located.position || null,
       });
       setRecord(saved);
+      setCalendarKey((k) => k + 1);
       setMessage(
         `${type === "arrival" ? "Arrival" : "Departure"} photo uploaded at ${formatTime(
           type === "arrival" ? saved.arrivalTime : saved.departureTime
@@ -258,6 +342,21 @@ export default function MyMitraAttendance({
         <LockedField label="Email" value={profile.email} />
       </div>
 
+      {allowUpload && isToday && !loading ? (
+        <QuickCheckIn
+          record={record}
+          uploadingType={uploadingType}
+          onStart={startCapture}
+        />
+      ) : null}
+
+      {locationNote ? (
+        <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <MapPin size={16} className="mt-0.5 shrink-0" />
+          {locationNote}
+        </p>
+      ) : null}
+
       {error ? (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -277,22 +376,28 @@ export default function MyMitraAttendance({
             title="Arrival"
             photoUrl={record?.arrivalPhotoUrl}
             time={record?.arrivalTime}
+            location={record?.arrivalLocation}
             uploading={uploadingType === "arrival"}
             disabled={!isToday || Boolean(uploadingType)}
-            onCapture={() => setCaptureType("arrival")}
+            onCapture={() => startCapture("arrival")}
             allowUpload={allowUpload}
           />
           <UploadCard
             title="Departure"
             photoUrl={record?.departurePhotoUrl}
             time={record?.departureTime}
+            location={record?.departureLocation}
             uploading={uploadingType === "departure"}
             disabled={!isToday || Boolean(uploadingType)}
-            onCapture={() => setCaptureType("departure")}
+            onCapture={() => startCapture("departure")}
             allowUpload={allowUpload}
           />
         </div>
       )}
+
+      {allowUpload && !isCustomCentre && profile.id ? (
+        <MyMonthCalendar userId={profile.id} availableDays={profile.availableDays} refreshKey={calendarKey} />
+      ) : null}
 
       <LiveCameraCapture
         open={Boolean(captureType)}

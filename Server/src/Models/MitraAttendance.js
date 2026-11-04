@@ -25,6 +25,24 @@ const resolveAttendancePercentages = (data = {}, fallback = {}) => {
   };
 };
 
+// Location columns are optional: databases that haven't run
+// mitra_attendance_location.sql simply have no location.
+const toLocation = (row, type) => {
+  const lat = row[`${type}_lat`];
+  const lng = row[`${type}_lng`];
+  if (lat == null || lng == null) return null;
+  return {
+    lat: Number(lat),
+    lng: Number(lng),
+    accuracyM: row[`${type}_accuracy_m`] ?? null,
+    distanceM: row[`${type}_distance_m`] ?? null,
+  };
+};
+
+// PostgREST reports an unknown column as PGRST204; Postgres itself as 42703.
+const isMissingColumnError = (error) =>
+  Boolean(error) && (error.code === "PGRST204" || error.code === "42703" || /column/i.test(error.message || ""));
+
 const toApiRecord = (row) => {
   if (!row) return null;
   return {
@@ -42,6 +60,8 @@ const toApiRecord = (row) => {
     approved: Boolean(row.approved),
     approvedBy: row.approved_by ?? null,
     approvedAt: toDate(row.approved_at),
+    arrivalLocation: toLocation(row, "arrival"),
+    departureLocation: toLocation(row, "departure"),
     dailyAttendancePercentage: row.daily_attendance_percentage ?? 100,
     weeklyAttendancePercentage: row.weekly_attendance_percentage ?? 100,
     monthlyAttendancePercentage: row.monthly_attendance_percentage ?? 100,
@@ -171,6 +191,7 @@ const upsertCheckIn = async ({
   dailyAttendancePercentage = null,
   weeklyAttendancePercentage = null,
   monthlyAttendancePercentage = null,
+  position = null,
 }) => {
   const supabase = getSupabase();
   const normalizedUserId = Number(userId) || userId;
@@ -221,11 +242,24 @@ const upsertCheckIn = async ({
   };
   if (existing) payload.id = existing.id;
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .upsert(payload, { onConflict: "user_id,date" })
-    .select("*")
-    .single();
+  const locationPatch = position
+    ? {
+        [`${type}_lat`]: position.lat,
+        [`${type}_lng`]: position.lng,
+        [`${type}_accuracy_m`]: position.accuracy,
+        [`${type}_distance_m`]: position.distanceM,
+      }
+    : {};
+
+  const save = (row) =>
+    supabase.from(TABLE).upsert(row, { onConflict: "user_id,date" }).select("*").single();
+
+  let { data, error } = await save({ ...payload, ...locationPatch });
+  if (error && position && isMissingColumnError(error)) {
+    // Location columns not added yet: still save the attendance itself.
+    console.warn("mitra_attendances has no location columns yet; run mitra_attendance_location.sql");
+    ({ data, error } = await save(payload));
+  }
   assertNoError(error, "Failed to save attendance record");
   return toApiRecord(data);
 };

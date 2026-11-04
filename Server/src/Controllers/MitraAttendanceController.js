@@ -2,6 +2,7 @@ const MitraAttendance = require("../Models/MitraAttendance");
 const User = require("../Models/User");
 const { fail, ok, wrap } = require("../Utils/httpResponse");
 const { filterByUserCentre } = require("../Utils/centreMatch");
+const { checkGeofence, parsePosition } = require("../Utils/kendraLocations");
 
 const VALID_TYPES = new Set(["arrival", "departure"]);
 
@@ -51,15 +52,31 @@ exports.uploadMitraPhoto = wrap(
     }
 
     const dbUser = await User.findById(userId);
+    const userCentre = dbUser?.centre || centre || req.user?.centre || null;
+
+    // Location is checked here, not in the browser, so it can't be bypassed.
+    const position = parsePosition(req.body);
+    const fence = checkGeofence(userCentre, position);
+    if (!fence.allowed) {
+      return fail(
+        res,
+        400,
+        fence.reason === "no-location"
+          ? "Turn on location for this website and try again. Check-in needs your location."
+          : `You are about ${fence.distanceM} m from the Kendra. Check-in only works within ${fence.radiusM} m of it.`
+      );
+    }
+
     const record = await MitraAttendance.upsertCheckIn({
       userId,
       name: dbUser?.name || name || null,
       email: dbUser?.email || req.user?.email || email || null,
-      centre: dbUser?.centre || centre || req.user?.centre || null,
+      centre: userCentre,
       centreId: centreId || null,
       date,
       type,
       file: req.file,
+      position: position ? { ...position, distanceM: fence.distanceM } : null,
       dailyAttendancePercentage,
       weeklyAttendancePercentage,
       monthlyAttendancePercentage,
