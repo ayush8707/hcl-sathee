@@ -10,6 +10,7 @@ import { QuickActions } from "../../Components/Dashboard/QuickActions";
 import { ExamProgress } from "../../Components/Dashboard/ExamProgress";
 import { StatTiles } from "../../Components/Dashboard/StatTiles";
 import { LowAttendanceCard } from "../../Components/Dashboard/LowAttendanceCard";
+import { PendingMitraApprovals } from "../../Components/Dashboard/PendingMitraApprovals";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
 import { fetchLeaveRequests } from "../../services/leaveRequests";
@@ -148,6 +149,10 @@ export default function AdminDashboard({
         <NotificationSettingsBanner message={notificationMessage} />
 
         <WelcomeBanner portalName={portalName} userName={userName} />
+
+        {isAdmin && !isCustomCentre ? (
+          <PendingMitraApprovals portalName={portalName} onReview={() => onNavChange(attendanceNavIndex)} />
+        ) : null}
 
         <StatTiles
           totalStudents={stats.centreStudents.length}
