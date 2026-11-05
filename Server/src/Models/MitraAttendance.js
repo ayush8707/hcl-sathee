@@ -94,16 +94,22 @@ const approveAttendance = async (userId, date, approvedBy) => {
     err.status = 400;
     throw err;
   }
+  // A full day is only proven once both the arrival and departure photos exist.
+  if (!existing.departure_time) {
+    const err = new Error("Waiting for the departure photo. Attendance can be approved after check-out.");
+    err.status = 400;
+    throw err;
+  }
   if (existing.approved) {
     const err = new Error("This attendance is already approved");
     err.status = 400;
     throw err;
   }
 
-  const arrival = toDate(existing.arrival_time);
-  const hoursSince = (Date.now() - arrival.getTime()) / (1000 * 60 * 60);
+  // The 24-hour approval window starts at check-out.
+  const hoursSince = (Date.now() - toDate(existing.departure_time).getTime()) / (1000 * 60 * 60);
   if (hoursSince > APPROVAL_WINDOW_HOURS) {
-    const err = new Error("Approval window has expired (24 hours)");
+    const err = new Error("Approval window has expired (24 hours after check-out)");
     err.status = 400;
     throw err;
   }

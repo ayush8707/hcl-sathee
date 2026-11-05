@@ -123,6 +123,9 @@ function QuickCheckIn({ record, uploadingType, onStart }) {
           <p className="text-sm text-emerald-700">
             Checked in at {formatTime(record.arrivalTime)} · checked out at {formatTime(record.departureTime)}
           </p>
+          <p className="mt-0.5 text-sm font-medium text-emerald-800">
+            {record.approved ? "✅ Approved by admin" : "⏳ Waiting for admin approval"}
+          </p>
         </div>
       </div>
     );
@@ -139,7 +142,7 @@ function QuickCheckIn({ record, uploadingType, onStart }) {
         <p className="text-sm text-slate-600">
           {isArrival
             ? "Tap once: take a selfie at the Kendra. Time and location are saved automatically."
-            : "Leaving the Kendra? Tap to check out."}
+            : "Leaving the Kendra? Tap to check out. Your attendance is approved after check-out."}
         </p>
       </div>
       <button
