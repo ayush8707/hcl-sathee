@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, ImageOff, Check, Lock, MapPin } from "lucide-react";
+import { Clock, ImageOff, Check, CheckCheck, Lock, MapPin, X } from "lucide-react";
 import { mapLink } from "../../utils/geolocation";
 import {
   fetchMitraAttendance,
@@ -125,12 +125,22 @@ const percentStatusMeta = (percent) => {
   return { statusKey: "low", statusLabel: "Low" };
 };
 
-function TimeCell({ label, time, location }) {
+function TimeCell({ label, time, location, photoUrl, onViewPhoto }) {
   return (
     <div className="flex flex-col gap-1 py-1">
       <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 text-center">
-        {formatTime(time)}
+      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm font-medium text-slate-700">
+        {photoUrl ? (
+          <button
+            type="button"
+            onClick={() => onViewPhoto?.(photoUrl, label)}
+            title={`View ${label.toLowerCase()} photo`}
+            className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition hover:ring-2 hover:ring-blue-400"
+          >
+            <img src={photoUrl} alt={`${label} photo`} className="h-full w-full object-cover" />
+          </button>
+        ) : null}
+        <span className="flex-1 text-center">{formatTime(time)}</span>
       </div>
       {location ? (
         <a
@@ -173,6 +183,11 @@ export default function SatheeMitraAttendance({
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [error, setError] = useState("");
   const [approvingId, setApprovingId] = useState(null);
+  const [bulkApproving, setBulkApproving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [photo, setPhoto] = useState(null); // { url, title } shown full size
+  // When the records were loaded; the 24-hour approval window is judged from it.
+  const [loadedAt, setLoadedAt] = useState(() => Date.now());
 
   const rows = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -218,6 +233,7 @@ export default function SatheeMitraAttendance({
 
         if (!isMounted) return;
         setRecords(recordsData);
+        setLoadedAt(Date.now());
       } catch (err) {
         console.error("Load mitra attendance error:", err);
         if (!isMounted) return;
@@ -317,6 +333,7 @@ export default function SatheeMitraAttendance({
 
   const handleApprove = async (userId, date) => {
     setApprovingId(userId);
+    setNotice("");
     try {
       const updated = await approveMitraAttendance(userId, date);
       setRecords((prev) =>
@@ -324,12 +341,39 @@ export default function SatheeMitraAttendance({
           String(r.userId) === String(userId) && r.date === date ? updated : r
         )
       );
+      return true;
     } catch (err) {
       console.error("Approve attendance error:", err);
       setError(err.response?.data?.message || err.message || "Unable to approve attendance");
+      return false;
     } finally {
       setApprovingId(null);
     }
+  };
+
+  // Mitras on screen who checked in, aren't approved yet and are still inside
+  // the 24-hour approval window.
+  const isExpired = (record) =>
+    loadedAt - new Date(record.arrivalTime).getTime() > 24 * 60 * 60 * 1000;
+  const pendingMitras =
+    canApprove && activeTab === "daily"
+      ? rows.filter((mitra) => {
+          const record = getSummary(mitra.id);
+          return record.arrivalTime && !record.approved && !isExpired(record);
+        })
+      : [];
+
+  const handleApproveAll = async () => {
+    const date = selectedDate || toInputDate();
+    if (!window.confirm(`Mark attendance for all ${pendingMitras.length} SATHEE MITRA who checked in on ${date}?`)) return;
+    setBulkApproving(true);
+    setError("");
+    let done = 0;
+    for (const mitra of pendingMitras) {
+      if (await handleApprove(mitra.id, date)) done += 1;
+    }
+    setBulkApproving(false);
+    setNotice(`Marked attendance for ${done} of ${pendingMitras.length} SATHEE MITRA.`);
   };
 
   const busy = loading || loadingRecords;
@@ -343,6 +387,29 @@ export default function SatheeMitraAttendance({
       {error ? (
         <div className="mx-5 mt-4 mb-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      ) : null}
+      {notice ? (
+        <div className="mx-5 mt-4 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {notice}
+        </div>
+      ) : null}
+
+      {pendingMitras.length > 0 && !busy ? (
+        <div className="mx-5 mt-4 mb-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            <b>{pendingMitras.length}</b> SATHEE MITRA checked in and {pendingMitras.length === 1 ? "is" : "are"} waiting
+            for approval. Approve within 24 hours of arrival, or it expires.
+          </p>
+          <button
+            type="button"
+            onClick={handleApproveAll}
+            disabled={bulkApproving || Boolean(approvingId)}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+          >
+            <CheckCheck size={16} />
+            {bulkApproving ? "Marking…" : `Approve all (${pendingMitras.length})`}
+          </button>
         </div>
       ) : null}
 
@@ -436,10 +503,10 @@ export default function SatheeMitraAttendance({
                     ) : (
                       <>
                         <td className="px-5 py-4 align-middle">
-                          <TimeCell label="Arrival" time={record.arrivalTime} location={record.arrivalLocation} />
+                          <TimeCell label="Arrival" time={record.arrivalTime} location={record.arrivalLocation} photoUrl={record.arrivalPhotoUrl} onViewPhoto={(url, title) => setPhoto({ url, title: `${mitra.name || "SATHEE MITRA"} · ${title}` })} />
                         </td>
                         <td className="px-5 py-4 align-middle">
-                          <TimeCell label="Departure" time={record.departureTime} location={record.departureLocation} />
+                          <TimeCell label="Departure" time={record.departureTime} location={record.departureLocation} photoUrl={record.departurePhotoUrl} onViewPhoto={(url, title) => setPhoto({ url, title: `${mitra.name || "SATHEE MITRA"} · ${title}` })} />
                         </td>
                       </>
                     )}
@@ -480,8 +547,7 @@ export default function SatheeMitraAttendance({
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                             <Check size={12} /> Approved
                           </span>
-                        ) : Date.now() - new Date(record.arrivalTime).getTime() >
-                          24 * 60 * 60 * 1000 ? (
+                        ) : isExpired(record) ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-400">
                             <Lock size={12} /> Expired
                           </span>
@@ -504,6 +570,23 @@ export default function SatheeMitraAttendance({
           </tbody>
         </table>
       </div>
+
+      {photo ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 p-4"
+          onMouseDown={(e) => e.target === e.currentTarget && setPhoto(null)}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-900">{photo.title}</p>
+              <button type="button" onClick={() => setPhoto(null)} aria-label="Close" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">
+                <X size={18} />
+              </button>
+            </div>
+            <img src={photo.url} alt={photo.title} className="max-h-[75vh] w-full bg-slate-100 object-contain" />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
