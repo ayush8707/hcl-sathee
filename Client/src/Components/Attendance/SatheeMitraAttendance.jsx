@@ -351,15 +351,14 @@ export default function SatheeMitraAttendance({
     }
   };
 
-  // Mitras on screen who checked in, aren't approved yet and are still inside
-  // the 24-hour approval window.
+  // Approval needs both photos; the 24-hour window starts at check-out.
   const isExpired = (record) =>
-    loadedAt - new Date(record.arrivalTime).getTime() > 24 * 60 * 60 * 1000;
+    loadedAt - new Date(record.departureTime).getTime() > 24 * 60 * 60 * 1000;
   const pendingMitras =
     canApprove && activeTab === "daily"
       ? rows.filter((mitra) => {
           const record = getSummary(mitra.id);
-          return record.arrivalTime && !record.approved && !isExpired(record);
+          return record.arrivalTime && record.departureTime && !record.approved && !isExpired(record);
         })
       : [];
 
@@ -398,8 +397,8 @@ export default function SatheeMitraAttendance({
       {pendingMitras.length > 0 && !busy ? (
         <div className="mx-5 mt-4 mb-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm text-amber-800">
-            <b>{pendingMitras.length}</b> SATHEE MITRA checked in and {pendingMitras.length === 1 ? "is" : "are"} waiting
-            for approval. Approve within 24 hours of arrival, or it expires.
+            <b>{pendingMitras.length}</b> SATHEE MITRA checked in and out and {pendingMitras.length === 1 ? "is" : "are"} waiting
+            for approval. Approve within 24 hours of check-out, or it expires.
           </p>
           <button
             type="button"
@@ -543,6 +542,13 @@ export default function SatheeMitraAttendance({
                           <span className="text-xs text-slate-400">Daily only</span>
                         ) : !record.arrivalTime ? (
                           <span className="text-xs text-slate-400">—</span>
+                        ) : !record.departureTime && !record.approved ? (
+                          <span
+                            title="Attendance can be marked after the departure photo"
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+                          >
+                            <Clock size={12} /> Waiting for departure
+                          </span>
                         ) : record.approved ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                             <Check size={12} /> Approved

@@ -17,8 +17,8 @@ const formatLeft = (ms) => {
 };
 
 /**
- * Admin reminder: SATHEE MITRA check-ins at this centre that still need
- * approval. They can only be approved within 24 hours of arrival.
+ * Admin reminder: SATHEE MITRA days at this centre (checked in and out) that
+ * still need approval. They can only be approved within 24 hours of check-out.
  */
 export function PendingMitraApprovals({ portalName, onReview }) {
   const [pending, setPending] = useState(null);
@@ -34,8 +34,9 @@ export function PendingMitraApprovals({ portalName, onReview }) {
         const checkedAt = Date.now();
         const open = records
           .filter((r) => matchesPortalCentre(r.centre, portalName))
-          .filter((r) => r.arrivalTime && !r.approved)
-          .map((r) => ({ ...r, msLeft: WINDOW_MS - (checkedAt - new Date(r.arrivalTime).getTime()) }))
+          // Ready to approve = checked in and out; the window starts at check-out.
+          .filter((r) => r.arrivalTime && r.departureTime && !r.approved)
+          .map((r) => ({ ...r, msLeft: WINDOW_MS - (checkedAt - new Date(r.departureTime).getTime()) }))
           .filter((r) => r.msLeft > 0)
           .sort((a, b) => a.msLeft - b.msLeft);
         setPending(open);
@@ -56,7 +57,7 @@ export function PendingMitraApprovals({ portalName, onReview }) {
         </span>
         <div>
           <p className="text-base font-semibold text-amber-900">
-            {pending.length} SATHEE MITRA check-in{pending.length === 1 ? "" : "s"} waiting for approval
+            {pending.length} SATHEE MITRA attendance{pending.length === 1 ? "" : "s"} waiting for approval
           </p>
           <p className="text-sm text-amber-800">
             {pending.map((r) => r.name || "SATHEE MITRA").slice(0, 3).join(", ")}
