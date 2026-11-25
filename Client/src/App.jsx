@@ -8,6 +8,7 @@ import ForgetPassword from "./Components/Auth/ForgetPassword";
 import LegalPage from "./Pages/Legal/LegalPage";
 import CardSelector_1 from "./Pages/Selector/CardSelector_1";
 import CardSelector_2 from "./Pages/Selector/CardSelector_2";
+import SatheeKendras from "./Pages/Selector/SatheeKendras";
 import OtherCentres from "./Pages/Selector/OtherCentres";
 import Dashboard from "./Pages/Dashboard/AdminDashboard";
 import HCLPartnerDashboard from "./Pages/Dashboard/HCLPartnerDashboard";
@@ -423,7 +424,20 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<CardSelector_1 openHCLSathee={() => navigate("/portals")} openPortal={openPortal} onLogout={handleLogout} userRole={userRole} userCentre={userCentre} />} />
+        <Route path="/" element={<CardSelector_1 openHCLSathee={() => navigate("/portals")} openKendras={() => navigate("/kendras")} openPortal={openPortal} onLogout={handleLogout} userRole={userRole} userCentre={userCentre} />} />
+
+        <Route
+          path="/kendras"
+          element={
+            <SatheeKendras
+              openPortal={openPortal}
+              onBack={() => navigate("/")}
+              onLogout={handleLogout}
+              userRole={userRole}
+              userCentre={userCentre}
+            />
+          }
+        />
 
         <Route
           path="/portals"
