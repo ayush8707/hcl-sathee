@@ -77,11 +77,8 @@ export const PORTAL_OPTIONS = [
 export const SATHEE_PORTAL_OPTIONS = [
   { title: "SATHEE DELHI", label: "Delhi", subtitle: "Delhi Learning Portal" },
   { title: "SATHEE JAMMU AND KASHMIR", label: "Jammu & Kashmir", subtitle: "Jammu & Kashmir Learning Portal" },
-  { title: "SATHEE JHARKHAND", label: "Jharkhand", subtitle: "Jharkhand Learning Portal" },
-  { title: "SATHEE MADHYA PRADESH", label: "Madhya Pradesh", subtitle: "Madhya Pradesh Learning Portal" },
   { title: "SATHEE NAGALAND", label: "Nagaland", subtitle: "Nagaland Learning Portal" },
   { title: "SATHEE ODISHA", label: "Odisha", subtitle: "Odisha Learning Portal" },
-  { title: "SATHEE RAJASTHAN", label: "Rajasthan", subtitle: "Rajasthan Learning Portal" },
   { title: "SATHEE TAMIL NADU", label: "Tamil Nadu", subtitle: "Tamil Nadu Learning Portal" },
   { title: "SATHEE TELANGANA", label: "Telangana", subtitle: "Telangana Learning Portal" },
   { title: "SATHEE UTTARAKHAND", label: "Uttarakhand", subtitle: "Uttarakhand Learning Portal" },
