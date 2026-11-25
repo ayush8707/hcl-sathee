@@ -18,6 +18,7 @@ import {
   PORTAL_OPTIONS,
   isStandalonePortal,
   STANDALONE_PORTALS,
+  SATHEE_PORTAL_OPTIONS,
 } from "../../utils/portalMapping";
 import { getCentreId, getCentrePlace } from "../../utils/centreDirectory";
 
@@ -59,10 +60,14 @@ const NETWORKS = {
     subtitle: "Kendras",
     heading: "Select Your SATHEE Kendra",
     intro: "Choose the SATHEE Kendra you want to manage.",
-    builtIn: [],
+    builtIn: SATHEE_PORTAL_OPTIONS,
     // "SATHEE KOTA" -> "Kota" for the card heading.
     prefix: /^SATHEE\s+/i,
-    includes: (name) => isStandalonePortal(name) && !STANDALONE_PORTALS.some((p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(name)),
+    includes: (name) =>
+      isStandalonePortal(name) &&
+      ![...STANDALONE_PORTALS, ...SATHEE_PORTAL_OPTIONS].some(
+        (p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(name)
+      ),
     // Every Kendra on this page is stored as "SATHEE <place>".
     toCentreName: (name) => `SATHEE ${name.replace(/^SATHEE\s*/i, "").trim()}`,
     empty: "No SATHEE Kendras yet.",
@@ -82,7 +87,8 @@ function Alert({ children }) {
 export default function CardSelector_2({ openDashboard, onBack, onLogout, userCentre, userRole, network = "hcl" }) {
   const net = NETWORKS[network] || NETWORKS.hcl;
   const cardHeading = (title) =>
-    net.prefix.test(title) ? toTitleCase(title.replace(net.prefix, "")) : title;
+    net.builtIn.find((option) => option.title === title)?.label ||
+    (net.prefix.test(title) ? toTitleCase(title.replace(net.prefix, "")) : title);
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
   const [accessMessage, setAccessMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);

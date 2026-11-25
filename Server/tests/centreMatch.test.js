@@ -20,3 +20,15 @@ assert.strictEqual(c.displayRoleForCentre("HCL PARTNER", "HCL JHARKHAND"), "HCL 
 assert.strictEqual(c.isStandaloneCentre(null), false);
 
 console.log("centre match tests passed");
+
+// New centre names: SATHEE Kendras keep their name, everything else gets "HCL ".
+const { normalizeName, DEFAULT_CENTRES } = require("../src/Models/Centre");
+assert.strictEqual(normalizeName("SATHEE Kota"), "SATHEE KOTA");
+assert.strictEqual(normalizeName("uttar pradesh"), "HCL UTTAR PRADESH");
+assert.strictEqual(normalizeName("HCL Odisha"), "HCL ODISHA");
+// The SATHEE state Kendras never collide with the HCL state portals.
+const keys = DEFAULT_CENTRES.map((n) => c.getCanonicalCentreKey(n));
+assert.strictEqual(new Set(keys).size, keys.length);
+assert.strictEqual(c.isStandaloneCentre("SATHEE RAJASTHAN"), true);
+assert.strictEqual(c.samePlatformAs("SATHEE RAJASTHAN", "HCL RAJASTHAN"), false);
+console.log("centre name tests passed");

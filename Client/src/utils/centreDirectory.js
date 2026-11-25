@@ -22,6 +22,16 @@ const CENTRE_DIRECTORY_BY_KEY = {
     place: "Bhopal, Madhya Pradesh",
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
   },
+  SATHEEDELHI: { place: "South Delhi, Delhi" },
+  SATHEEJAMMUANDKASHMIR: { place: "Srinagar and Jammu, J&K" },
+  SATHEEJHARKHAND: { place: "East Singhbhum, Jharkhand" },
+  SATHEEMADHYAPRADESH: { place: "Balaghat, Madhya Pradesh" },
+  SATHEENAGALAND: { place: "Dimapur and Kohima, Nagaland" },
+  SATHEEODISHA: { place: "Sambalpur, Odisha" },
+  SATHEERAJASTHAN: { place: "Jhunjhunu, Rajasthan" },
+  SATHEETAMILNADU: { place: "3 Kendras, Tamil Nadu" },
+  SATHEETELANGANA: { place: "Hyderabad, Telangana" },
+  SATHEEUTTARAKHAND: { place: "Dehradun and Khatima, Uttarakhand" },
   // Funded by Hero Future Energies (not part of HCL SATHEE).
   SATHEEBARMER: {
     id: "RJ-BA-01",
