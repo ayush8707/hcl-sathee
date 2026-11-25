@@ -14,8 +14,14 @@ const normalizeCentreValue = (value) =>
     .toUpperCase()
     .replace(/[^A-Z]/g, "");
 
+// Kendras added on the SATHEE page are named "SATHEE <place>" and are each
+// their own Kendra, even when the place names a state (e.g. Rajasthan).
+const isSatheeKendraName = (normalized) => normalized.startsWith("SATHEE") && !normalized.includes("BARMER");
+
 const matchCentreRule = (normalized) =>
-  CENTRE_RULES.find((rule) => rule.patterns.some((pattern) => normalized.includes(pattern)));
+  isSatheeKendraName(normalized)
+    ? undefined
+    : CENTRE_RULES.find((rule) => rule.patterns.some((pattern) => normalized.includes(pattern)));
 
 export const getCanonicalCentreKey = (value = "") => {
   const normalized = normalizeCentreValue(value);
@@ -77,10 +83,10 @@ export const STANDALONE_PORTALS = [
   },
 ];
 
-const STANDALONE_KEYS = new Set(STANDALONE_PORTALS.map((p) => getCanonicalCentreKey(p.title)));
-
+// Barmer and every Kendra added on the SATHEE page ("SATHEE <place>") are
+// their own platform. Mirrors isStandaloneCentre in Server/src/Utils/centreMatch.js.
 export const isStandalonePortal = (portalOrCentreName = "") =>
-  STANDALONE_KEYS.has(getCanonicalCentreKey(portalOrCentreName));
+  getCanonicalCentreKey(portalOrCentreName).startsWith("SATHEE");
 
 export const getStandalonePartnerName = (portalOrCentreName = "") => {
   const key = getCanonicalCentreKey(portalOrCentreName);

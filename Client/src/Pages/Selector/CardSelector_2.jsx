@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, ArrowRight, ArrowLeft, ShieldAlert, Plus, Pencil, Trash2, Lock, LogOut } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
+import SatheeLogo from "../../assets/sathee.svg";
 import AddCentreModal from "../../Components/Selector/AddCentreModal";
 import {
   fetchCentres,
@@ -16,6 +17,7 @@ import {
   getCanonicalCentreKey,
   PORTAL_OPTIONS,
   isStandalonePortal,
+  STANDALONE_PORTALS,
 } from "../../utils/portalMapping";
 import { getCentreId, getCentrePlace } from "../../utils/centreDirectory";
 
@@ -25,12 +27,48 @@ const DEFAULT_CENTRE_KEYS = new Set(
   PORTAL_OPTIONS.map((option) => getCanonicalCentreKey(option.title))
 );
 
-// "HCL SATHEE RAJASTHAN" -> "Rajasthan" for the card heading.
-const PORTAL_PREFIX = /^HCL\s+SATHEE\s+/i;
 const toTitleCase = (value) =>
   value.toLowerCase().replace(/\b([a-z])/g, (match) => match.toUpperCase());
-const cardHeading = (title) =>
-  PORTAL_PREFIX.test(title) ? toTitleCase(title.replace(PORTAL_PREFIX, "")) : title;
+
+// The same page serves two networks:
+//  - HCL SATHEE: the 3 state portals plus HCL centres added here;
+//  - SATHEE: its own Kendras, named "SATHEE <place>" (starts empty).
+// Barmer has its own card on the platform screen, so it is on neither list.
+const NETWORKS = {
+  hcl: {
+    name: "HCL SATHEE",
+    logo: HCLLogo,
+    logoAlt: "HCL Logo",
+    logoClass: "object-contain",
+    subtitle: "State Portals",
+    heading: "Select Your State Portal",
+    intro: "Choose the HCL SATHEE portal you want to manage.",
+    builtIn: PORTAL_OPTIONS,
+    // "HCL SATHEE RAJASTHAN" -> "Rajasthan" for the card heading.
+    prefix: /^HCL\s+SATHEE\s+/i,
+    includes: (name) => !DEFAULT_CENTRE_KEYS.has(getCanonicalCentreKey(name)) && !isStandalonePortal(name),
+    toCentreName: (name) => name,
+    empty: "",
+    unit: "portal",
+  },
+  sathee: {
+    name: "SATHEE",
+    logo: SatheeLogo,
+    logoAlt: "SATHEE Logo",
+    logoClass: "rounded-full object-cover",
+    subtitle: "Kendras",
+    heading: "Select Your SATHEE Kendra",
+    intro: "Choose the SATHEE Kendra you want to manage.",
+    builtIn: [],
+    // "SATHEE KOTA" -> "Kota" for the card heading.
+    prefix: /^SATHEE\s+/i,
+    includes: (name) => isStandalonePortal(name) && !STANDALONE_PORTALS.some((p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(name)),
+    // Every Kendra on this page is stored as "SATHEE <place>".
+    toCentreName: (name) => `SATHEE ${name.replace(/^SATHEE\s*/i, "").trim()}`,
+    empty: "No SATHEE Kendras yet.",
+    unit: "Kendra",
+  },
+};
 
 function Alert({ children }) {
   return (
@@ -41,7 +79,10 @@ function Alert({ children }) {
   );
 }
 
-export default function CardSelector_2({ openDashboard, onBack, onLogout, userCentre, userRole }) {
+export default function CardSelector_2({ openDashboard, onBack, onLogout, userCentre, userRole, network = "hcl" }) {
+  const net = NETWORKS[network] || NETWORKS.hcl;
+  const cardHeading = (title) =>
+    net.prefix.test(title) ? toTitleCase(title.replace(net.prefix, "")) : title;
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
   const [accessMessage, setAccessMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -56,13 +97,7 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
   const loadCentres = async () => {
     try {
       const centres = await fetchCentres();
-      setExtraCentres(
-        centres.filter(
-          (centre) =>
-            !DEFAULT_CENTRE_KEYS.has(getCanonicalCentreKey(centre.name)) &&
-            !isStandalonePortal(centre.name)
-        )
-      );
+      setExtraCentres(centres.filter((centre) => net.includes(centre.name)));
     } catch (error) {
       console.error("Fetch Centres Error:", error);
     }
@@ -70,7 +105,8 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
 
   useEffect(() => {
     loadCentres();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [network]);
 
   const handleOpenPortal = (portalTitle) => {
     if (!canAccessPortal(userCentre, portalTitle, userRole)) {
@@ -116,9 +152,9 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
     setSaving(true);
     try {
       if (editingCentre) {
-        await renameCentre(editingCentre.id, name);
+        await renameCentre(editingCentre.id, net.toCentreName(name));
       } else {
-        await createCentre(name);
+        await createCentre(net.toCentreName(name));
       }
       await loadCentres();
       closeModal();
@@ -154,7 +190,7 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
   };
 
   const centreCards = [
-    ...PORTAL_OPTIONS,
+    ...net.builtIn,
     ...extraCentres.map((centre) => ({
       title: centre.name,
       subtitle: "Learning Portal",
@@ -166,10 +202,10 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
     <div className="min-h-screen w-full flex flex-col bg-[#F1F5F9] font-sans text-black">
       <header className="h-16 flex items-center justify-between gap-3 px-4 sm:px-6 border-b border-[#3B82F6]/20 bg-[#5785d0]">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <img src={HCLLogo} alt="HCL Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain shrink-0" />
+          <img src={net.logo} alt={net.logoAlt} className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 ${net.logoClass}`} />
           <div className="min-w-0">
-            <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">HCL SATHEE</p>
-            <p className="text-xs text-[#101011] truncate">State Portals</p>
+            <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">{net.name}</p>
+            <p className="text-xs text-[#101011] truncate">{net.subtitle}</p>
           </div>
         </div>
 
@@ -200,11 +236,11 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl">Select Your State Portal</h1>
-            <p className="mt-2 text-slate-600">Choose the HCL SATHEE portal you want to manage.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl">{net.heading}</h1>
+            <p className="mt-2 text-slate-600">{net.intro}</p>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-600 shadow-sm">
-            {centreCards.length} {centreCards.length === 1 ? "portal" : "portals"}
+            {centreCards.length} {centreCards.length === 1 ? net.unit : `${net.unit}s`}
           </span>
         </div>
 
@@ -217,7 +253,7 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
             const custom = state.custom;
             const kendraId = getCentreId(state.title);
             const place = getCentrePlace(state.title);
-            const isPrefixed = PORTAL_PREFIX.test(state.title);
+            const isPrefixed = net.prefix.test(state.title);
 
             return (
               <article
@@ -246,7 +282,7 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
                   </div>
 
                   {isPrefixed ? (
-                    <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-blue-600">HCL SATHEE</p>
+                    <p className="mt-5 text-xs font-semibold uppercase tracking-wider text-blue-600">{net.name}</p>
                   ) : null}
                   <h2 className={`${isPrefixed ? "mt-1" : "mt-5"} break-words text-2xl font-bold tracking-tight text-slate-900`}>
                     {cardHeading(state.title)}
@@ -326,10 +362,14 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
             </button>
           ) : null}
         </div>
+
+        {!isAdmin && centreCards.length === 0 && net.empty ? (
+          <p className="mt-16 text-center text-slate-500">{net.empty}</p>
+        ) : null}
       </main>
 
       <footer className="pb-6">
-        <p className="text-center text-sm text-slate-500">HCL SATHEE Platform</p>
+        <p className="text-center text-sm text-slate-500">{net.name} Platform</p>
       </footer>
 
       {isAdmin ? (
@@ -339,8 +379,8 @@ export default function CardSelector_2({ openDashboard, onBack, onLogout, userCe
           onAdd={handleSubmitCentre}
           submitting={saving}
           error={addError}
-          initialName={editingCentre?.name || ""}
-          title={editingCentre ? "Rename Centre" : "Add a Centre"}
+          initialName={editingCentre ? (network === "sathee" ? cardHeading(editingCentre.name) : editingCentre.name) : ""}
+          title={editingCentre ? "Rename Centre" : network === "sathee" ? "Add a SATHEE Kendra" : "Add a Centre"}
           submitLabel={editingCentre ? "Save" : "Add"}
         />
       ) : null}
