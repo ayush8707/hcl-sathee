@@ -18,6 +18,9 @@ const getCanonicalCentreKey = (value = "") => {
 
   // Barmer is in Rajasthan too, so check it before the state-wide rule.
   if (normalized.includes("BARMER")) return "SATHEEBARMER";
+  // Kendras added on the SATHEE page are named "SATHEE <place>" and are each
+  // their own Kendra, even when the place names a state (e.g. Rajasthan).
+  if (normalized.startsWith("SATHEE")) return normalized;
   if (normalized.includes("RAJASTHAN") || normalized.includes("RAJATHAN")) {
     return "HCLRAJASTHAN";
   }
@@ -64,14 +67,21 @@ const isSatheeMitraRole = (role = "") => {
   );
 };
 
-// Kendras that are their own platform (not HCL SATHEE). Mirrors
-// STANDALONE_PORTALS in Client/src/utils/portalMapping.js.
-const STANDALONE_CENTRE_KEYS = new Set(["SATHEEBARMER"]);
-
-// Name of the platform a centre belongs to, as shown to its users.
+// Kendras that are their own platform (not HCL SATHEE): SATHEE Barmer and every
+// Kendra added on the SATHEE page ("SATHEE <place>"). Mirrors isStandalonePortal
+// in Client/src/utils/portalMapping.js.
 const STANDALONE_PLATFORM_NAMES = { SATHEEBARMER: "SATHEE Barmer" };
 const isStandaloneCentre = (centre = "") =>
-  STANDALONE_CENTRE_KEYS.has(getCanonicalCentreKey(centre ?? ""));
+  getCanonicalCentreKey(centre ?? "").startsWith("SATHEE");
+
+// "SATHEE KOTA" -> "SATHEE Kota"
+const satheeKendraName = (centre = "") =>
+  "SATHEE " +
+  String(centre ?? "")
+    .trim()
+    .replace(/^SATHEE\s*/i, "")
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase());
 
 /**
  * True when an item's centre belongs to the same platform as `centre`:
@@ -84,7 +94,8 @@ const samePlatformAs = (itemCentre, centre) =>
     : !isStandaloneCentre(itemCentre);
 
 const platformNameForCentre = (centre = "") =>
-  STANDALONE_PLATFORM_NAMES[getCanonicalCentreKey(centre ?? "")] || "HCL SATHEE";
+  STANDALONE_PLATFORM_NAMES[getCanonicalCentreKey(centre ?? "")] ||
+  (isStandaloneCentre(centre) ? satheeKendraName(centre) : "HCL SATHEE");
 
 /**
  * The partner role is stored as "HCL PARTNER" everywhere. Standalone Kendras
@@ -92,7 +103,7 @@ const platformNameForCentre = (centre = "") =>
  * "CSR PARTNER". Display only — never use this for permission checks.
  */
 const displayRoleForCentre = (role = "", centre = "") =>
-  isHclPartnerRole(role) && STANDALONE_CENTRE_KEYS.has(getCanonicalCentreKey(centre ?? ""))
+  isHclPartnerRole(role) && isStandaloneCentre(centre)
     ? "CSR PARTNER"
     : role;
 
