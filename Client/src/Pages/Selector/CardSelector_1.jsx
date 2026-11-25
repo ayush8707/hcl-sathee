@@ -54,11 +54,12 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
     {
       id: "sathee",
       title: "SATHEE",
-      subtitle: "All SATHEE Kendras across India, state by state",
+      subtitle: "SATHEE Kendras in different states across India",
       icon: (size) => <LogoIcon src={SatheeLogo} alt="SATHEE" size={size} />,
-      buttonText: "View Kendras",
+      buttonText: "Open SATHEE",
       onClick: openKendras,
-      badge: "Network",
+      partner: "IIT Kanpur",
+      badge: "Partner",
     },
   ];
 
@@ -189,8 +190,6 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
                         ? "bg-blue-100 text-blue-700"
                         : badge === "Custom"
                           ? "bg-emerald-100 text-emerald-700"
-                          : badge === "Network"
-                            ? "bg-amber-100 text-amber-800"
                           : "bg-slate-100 text-slate-700"
                     }`}
                   >
