@@ -7,7 +7,25 @@ const TABLE = "centres";
  * The built-in centres. They behave as always-present
  * defaults even when the `centres` table has no rows for them.
  */
-const DEFAULT_CENTRES = ["HCL RAJASTHAN", "HCL JHARKHAND", "HCL MADHYA PRADESH", "SATHEE BARMER"];
+// SATHEE Kendra states (from satheekendra.com); each is its own platform.
+// Mirrors SATHEE_PORTAL_OPTIONS in Client/src/utils/portalMapping.js.
+const SATHEE_STATE_CENTRES = [
+  "SATHEE DELHI",
+  "SATHEE JAMMU AND KASHMIR",
+  "SATHEE NAGALAND",
+  "SATHEE ODISHA",
+  "SATHEE TAMIL NADU",
+  "SATHEE TELANGANA",
+  "SATHEE UTTARAKHAND",
+];
+
+const DEFAULT_CENTRES = [
+  "HCL RAJASTHAN",
+  "HCL JHARKHAND",
+  "HCL MADHYA PRADESH",
+  "SATHEE BARMER",
+  ...SATHEE_STATE_CENTRES,
+];
 
 /**
  * Normalize a free-text centre name into the same shape as the existing
@@ -28,6 +46,8 @@ const normalizeName = (value = "") => {
     .trim();
 
   if (!base) return "";
+  // SATHEE Kendras keep their own name ("SATHEE KOTA"); everything else is HCL.
+  if (/^SATHEE\b/.test(base)) return base;
   return `HCL ${base}`;
 };
 
