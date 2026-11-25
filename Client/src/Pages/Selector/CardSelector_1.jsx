@@ -24,18 +24,8 @@ function LogoIcon({ src, alt, contain = false }) {
 
 const partnerLogo = (name) => CSR_PARTNERS.find((partner) => partner.name === name)?.logo ?? null;
 
-// SATHEE web app entry point. Swap for the real URL after deployment/domain.
-const SATHEE_APP_URL = "http://localhost:5174/";
-
-export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, userRole, userCentre }) {
+export default function DashboardSelect({ openHCLSathee, openKendras, openPortal, onLogout, userRole, userCentre }) {
   const isAdmin = String(userRole || "").trim().toUpperCase() === "ADMIN";
-
-  const openSatheeApp = () => {
-    const url = new URL(SATHEE_APP_URL);
-    if (userRole) url.searchParams.set("role", userRole);
-    if (userCentre) url.searchParams.set("centre", userCentre);
-    window.open(url.toString(), "_blank", "noopener,noreferrer");
-  };
 
   const [customDashboards, setCustomDashboards] = useState(() => getCustomDashboards());
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,11 +54,11 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
     {
       id: "sathee",
       title: "SATHEE",
-      subtitle: "Go to the official SATHEE learning portal",
+      subtitle: "All SATHEE Kendras across India, state by state",
       icon: (size) => <LogoIcon src={SatheeLogo} alt="SATHEE" size={size} />,
-      buttonText: "Visit SATHEE",
-      onClick: openSatheeApp,
-      badge: "External",
+      buttonText: "View Kendras",
+      onClick: openKendras,
+      badge: "Network",
     },
   ];
 
@@ -199,6 +189,8 @@ export default function DashboardSelect({ openHCLSathee, openPortal, onLogout, u
                         ? "bg-blue-100 text-blue-700"
                         : badge === "Custom"
                           ? "bg-emerald-100 text-emerald-700"
+                          : badge === "Network"
+                            ? "bg-amber-100 text-amber-800"
                           : "bg-slate-100 text-slate-700"
                     }`}
                   >
