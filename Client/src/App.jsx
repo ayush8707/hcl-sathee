@@ -33,6 +33,7 @@ import SM_TestMarks from "./Pages/TestMarks/SM_TestMarks";
 import CentreReport from "./Pages/Report/CentreReport";
 import {
   canAccessPortal,
+  canOpenPlatform,
   canEnterAdminDashboard,
   canEnterPartnerDashboard,
   canEnterSatheeMitraDashboard,
@@ -395,6 +396,15 @@ const AppContent = () => {
 
   // Role-based route guards
   if (location.pathname === "/centres" && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Each user only opens their own platform: HCL SATHEE users the state
+  // portals, SATHEE Kendra users the SATHEE Kendras page (admins: both).
+  if (location.pathname === "/portals" && !canOpenPlatform("HCL SATHEE", userCentre, userRole)) {
+    return <Navigate to="/" replace />;
+  }
+  if (location.pathname === "/kendras" && !canOpenPlatform("SATHEE", userCentre, userRole)) {
     return <Navigate to="/" replace />;
   }
 

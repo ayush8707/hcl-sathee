@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2, LayoutGrid } from "lucide-react";
 import HCLLogo from "../assets/HCL.svg";
 import SatheeLogo from "../assets/sathee-logo.png";
-import { getCanonicalCentreKey, isStandalonePortal, STANDALONE_PORTALS } from "../utils/portalMapping";
+import { isSatheeKendra, isStandalonePortal } from "../utils/portalMapping";
 
 function NavButtons({
   navItems,
@@ -57,9 +57,7 @@ export function MainLayout({
   const standalone = isStandalonePortal(portalName);
   // Kendras listed on the SATHEE page (Delhi, Odisha, ...) go back to that
   // list; Barmer has its own card on the platform screen, so it goes there.
-  const satheeKendra =
-    standalone &&
-    !STANDALONE_PORTALS.some((p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(portalName));
+  const satheeKendra = isSatheeKendra(portalName);
   const showOtherCentres = isAdminArea && location.pathname !== "/centres" && !standalone;
 
   useEffect(() => {

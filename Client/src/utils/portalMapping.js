@@ -97,6 +97,25 @@ export const STANDALONE_PORTALS = [
 export const isStandalonePortal = (portalOrCentreName = "") =>
   getCanonicalCentreKey(portalOrCentreName).startsWith("SATHEE");
 
+// Kendras on the SATHEE platform page (Delhi, Erode, ...): standalone, but not
+// one of STANDALONE_PORTALS (Barmer), which has its own platform card.
+export const isSatheeKendra = (portalOrCentreName = "") =>
+  isStandalonePortal(portalOrCentreName) &&
+  !STANDALONE_PORTALS.some((p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(portalOrCentreName));
+
+/**
+ * Which platform card on the first screen a user belongs to:
+ * "HCL SATHEE", "SATHEE" (the SATHEE Kendras page) or a standalone portal's
+ * title (e.g. "SATHEE BARMER"). Admins belong to all of them.
+ */
+export const canOpenPlatform = (platform, userCentre = "", userRole = "") => {
+  if (isAdminRole(userRole)) return true;
+  if (!userCentre) return false;
+  if (platform === "HCL SATHEE") return !isStandalonePortal(userCentre);
+  if (platform === "SATHEE") return isSatheeKendra(userCentre);
+  return canAccessPortal(userCentre, platform, userRole);
+};
+
 export const getStandalonePartnerName = (portalOrCentreName = "") => {
   const key = getCanonicalCentreKey(portalOrCentreName);
   return STANDALONE_PORTALS.find((p) => getCanonicalCentreKey(p.title) === key)?.partner ?? null;
