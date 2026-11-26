@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2, LayoutGrid } from "lucide-react";
 import HCLLogo from "../assets/HCL.svg";
-import SatheeLogo from "../assets/sathee.svg";
+import SatheeLogo from "../assets/sathee-logo.png";
 import { getCanonicalCentreKey, isStandalonePortal, STANDALONE_PORTALS } from "../utils/portalMapping";
 
 function NavButtons({
@@ -101,7 +101,7 @@ export function MainLayout({
           <img
             src={standalone ? SatheeLogo : HCLLogo}
             alt={standalone ? "SATHEE Logo" : "HCL Logo"}
-            className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 ${standalone ? "rounded-full object-cover" : "object-contain"}`}
+            className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 ${standalone ? "rounded-lg bg-white p-0.5 object-contain" : "object-contain"}`}
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">

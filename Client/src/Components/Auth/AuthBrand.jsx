@@ -1,4 +1,4 @@
-import logo from "../../assets/sathee.svg";
+import logo from "../../assets/sathee-logo.png";
 
 export default function AuthBrand() {
   return (
@@ -10,7 +10,7 @@ export default function AuthBrand() {
           <img
             src={logo}
             alt="SATHEE logo"
-            className="h-full w-full rounded-full object-cover"
+            className="h-full w-full object-contain p-2"
           />
         </div>
       </div>

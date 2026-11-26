@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, ArrowRight, ArrowLeft, ShieldAlert, Plus, Pencil, Trash2, Lock, LogOut } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
-import SatheeLogo from "../../assets/sathee.svg";
+import SatheeLogo from "../../assets/sathee-logo.png";
 import AddCentreModal from "../../Components/Selector/AddCentreModal";
 import {
   fetchCentres,
@@ -56,7 +56,7 @@ const NETWORKS = {
     name: "SATHEE",
     logo: SatheeLogo,
     logoAlt: "SATHEE Logo",
-    logoClass: "rounded-full object-cover",
+    logoClass: "rounded-lg bg-white p-0.5 object-contain",
     subtitle: "Kendras",
     heading: "Select Your SATHEE Kendra",
     intro: "Choose the SATHEE Kendra you want to manage.",
