@@ -10,8 +10,10 @@ const { getCanonicalCentreKey } = require("./centreMatch");
  *   HCLRAJASTHAN: { lat: 28.0229, lng: 75.789, radiusM: 200 },
  */
 const KENDRA_LOCATIONS = {
-  // HCLRAJASTHAN: { lat: 0, lng: 0, radiusM: 200 },
-  // HCLJHARKHAND: { lat: 0, lng: 0, radiusM: 200 },
+  // Kendriye Vidhyalaya Khetri Nagar, Jhunjhunu: 28°04'28.9"N 75°49'23.8"E
+  HCLRAJASTHAN: { lat: 28.074694, lng: 75.823278, radiusM: 200 },
+  // HCL VTC SATHEE Kendra, Sohda: 22°34'12.6"N 86°26'02.8"E
+  HCLJHARKHAND: { lat: 22.570167, lng: 86.434111, radiusM: 200 },
   // HCLMADHYAPRADESH: { lat: 0, lng: 0, radiusM: 200 },
   // SATHEEBARMER: { lat: 0, lng: 0, radiusM: 200 },
 };
