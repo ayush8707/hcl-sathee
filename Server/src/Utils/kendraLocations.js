@@ -14,7 +14,8 @@ const KENDRA_LOCATIONS = {
   HCLRAJASTHAN: { lat: 28.074694, lng: 75.823278, radiusM: 200 },
   // HCL VTC SATHEE Kendra, Sohda: 22°34'12.6"N 86°26'02.8"E
   HCLJHARKHAND: { lat: 22.570167, lng: 86.434111, radiusM: 200 },
-  // HCLMADHYAPRADESH: { lat: 0, lng: 0, radiusM: 200 },
+  // SATHEE Kendra Malanjkhand (Balaghat): 22°03'03.9"N 80°42'58.5"E
+  HCLMADHYAPRADESH: { lat: 22.051083, lng: 80.71625, radiusM: 200 },
   // Bharti Vidhya Mandir Sr. Sec. School, Shiv, Barmer
   SATHEEBARMER: { lat: 26.1867386, lng: 71.2433888, radiusM: 200 },
 };
