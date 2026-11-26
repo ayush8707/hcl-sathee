@@ -15,7 +15,8 @@ const KENDRA_LOCATIONS = {
   // HCL VTC SATHEE Kendra, Sohda: 22°34'12.6"N 86°26'02.8"E
   HCLJHARKHAND: { lat: 22.570167, lng: 86.434111, radiusM: 200 },
   // HCLMADHYAPRADESH: { lat: 0, lng: 0, radiusM: 200 },
-  // SATHEEBARMER: { lat: 0, lng: 0, radiusM: 200 },
+  // Shiv, Barmer (Google Maps pin "Bharti Vidhaya Mandir Sr Sec School Shiv")
+  SATHEEBARMER: { lat: 26.1867386, lng: 71.2433888, radiusM: 200 },
 };
 
 // Phone GPS is often off by tens of metres indoors; give that much benefit of
