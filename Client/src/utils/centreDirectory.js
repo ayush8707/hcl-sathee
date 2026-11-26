@@ -19,7 +19,7 @@ const CENTRE_DIRECTORY_BY_KEY = {
   },
   HCLMADHYAPRADESH: {
     id: "MP-BT-01",
-    place: "Bhopal, Madhya Pradesh",
+    place: "Malanjkhand, Balaghat, Madhya Pradesh",
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
   },
   SATHEEDELHI: { place: "South Delhi, Delhi" },
