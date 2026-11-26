@@ -1,5 +1,6 @@
 const { getSupabase, assertNoError } = require("../config/supabase");
 const { getCanonicalCentreKey } = require("../Utils/centreMatch");
+const { SATHEE_KENDRAS } = require("../Utils/satheeKendras");
 
 const TABLE = "centres";
 
@@ -7,24 +8,13 @@ const TABLE = "centres";
  * The built-in centres. They behave as always-present
  * defaults even when the `centres` table has no rows for them.
  */
-// SATHEE Kendra states (from satheekendra.com); each is its own platform.
-// Mirrors SATHEE_PORTAL_OPTIONS in Client/src/utils/portalMapping.js.
-const SATHEE_STATE_CENTRES = [
-  "SATHEE DELHI",
-  "SATHEE JAMMU AND KASHMIR",
-  "SATHEE NAGALAND",
-  "SATHEE ODISHA",
-  "SATHEE TAMIL NADU",
-  "SATHEE TELANGANA",
-  "SATHEE UTTARAKHAND",
-];
-
 const DEFAULT_CENTRES = [
   "HCL RAJASTHAN",
   "HCL JHARKHAND",
   "HCL MADHYA PRADESH",
   "SATHEE BARMER",
-  ...SATHEE_STATE_CENTRES,
+  // The SATHEE Kendras on the SATHEE platform page; each is its own platform.
+  ...SATHEE_KENDRAS.map((kendra) => kendra.name),
 ];
 
 /**

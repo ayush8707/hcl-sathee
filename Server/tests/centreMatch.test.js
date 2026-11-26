@@ -32,3 +32,17 @@ assert.strictEqual(new Set(keys).size, keys.length);
 assert.strictEqual(c.isStandaloneCentre("SATHEE RAJASTHAN"), true);
 assert.strictEqual(c.samePlatformAs("SATHEE RAJASTHAN", "HCL RAJASTHAN"), false);
 console.log("centre name tests passed");
+
+// Kendra IDs from the SATHEE Kendra Master List.
+const { getCentreId, getStudentIdPrefix } = require("../src/Utils/centreDirectory");
+assert.strictEqual(DEFAULT_CENTRES.length, 4 + 17);
+assert.strictEqual(getCentreId("SATHEE UDHAM SINGH NAGAR"), "UK-UR-01");
+assert.strictEqual(getCentreId("SATHEE ERODE IV"), "TN-EE-04");
+assert.strictEqual(c.isStandaloneCentre("SATHEE ERODE IV"), true);
+// One Kendra per prefix keeps the short form; the five Erode Kendras keep
+// their full ID so their student IDs never clash.
+assert.strictEqual(getStudentIdPrefix("HCL RAJASTHAN"), "RJ-JU");
+assert.strictEqual(getStudentIdPrefix("SATHEE DEHRADUN"), "UK-DN");
+assert.strictEqual(getStudentIdPrefix("SATHEE ERODE I"), "TN-EE-01");
+assert.strictEqual(getStudentIdPrefix("SATHEE ERODE V"), "TN-EE-05");
+console.log("kendra id tests passed");
