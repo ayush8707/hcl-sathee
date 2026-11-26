@@ -1,0 +1,92 @@
+# Weekly backup of uploaded files (Supabase Storage).
+#
+# The nightly "Database backup" copies all tables but not uploaded files:
+# SATHEE MITRA selfies, marks sheets, timetables and announcement
+# attachments. This copies every file, encrypts the bundle with
+# BACKUP_PASSPHRASE, and keeps it for 35 days under
+# Actions -> "Files backup" -> a run -> Artifacts.
+#
+# Needs these repository secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_URL               Same value as on Render.
+#   SUPABASE_SERVICE_ROLE_KEY  Same value as on Render. If you change the key
+#                              on Render, change it here too.
+#   BACKUP_PASSPHRASE          Already set for the database backup.
+#
+# How to restore: see Server/supabase/BACKUPS.md.
+
+name: Files backup
+
+on:
+  schedule:
+    - cron: "30 21 * * 6" # 03:00 India time, every Sunday
+  workflow_dispatch: {} # "Run workflow" button for a backup right now
+
+permissions:
+  contents: read
+
+concurrency:
+  group: files-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check secrets are set
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          missing=""
+          [ -n "$SUPABASE_URL" ] || missing="$missing SUPABASE_URL"
+          [ -n "$SUPABASE_SERVICE_ROLE_KEY" ] || missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          [ -n "$BACKUP_PASSPHRASE" ] || missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing. See .github/workflows/files-backup.yml."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install server packages
+        working-directory: Server
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: Copy files
+        working-directory: Server
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          stamp=$(date -u +%Y-%m-%d)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          node scripts/backup-storage.js "$RUNNER_TEMP/sathee-files-$stamp"
+          du -sh "$RUNNER_TEMP/sathee-files-$stamp"
+
+      - name: Pack and encrypt
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          cd "$RUNNER_TEMP"
+          tar -czf "sathee-files-$STAMP.tar.gz" "sathee-files-$STAMP"
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "$GITHUB_WORKSPACE/sathee-files-$STAMP.tar.gz.gpg" "sathee-files-$STAMP.tar.gz" <<< "$BACKUP_PASSPHRASE"
+          # Only the encrypted copy leaves this machine.
+          rm -rf "sathee-files-$STAMP" "sathee-files-$STAMP.tar.gz"
+          ls -lh "$GITHUB_WORKSPACE/sathee-files-$STAMP.tar.gz.gpg"
+
+      - name: Keep backup for 35 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: sathee-files-${{ env.STAMP }}
+          path: sathee-files-${{ env.STAMP }}.tar.gz.gpg
+          retention-days: 35
+          if-no-files-found: error
+          compression-level: 0
