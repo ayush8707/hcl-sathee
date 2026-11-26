@@ -10,7 +10,7 @@ import {
   getCustomDashboards,
   removeCustomDashboard,
 } from "../../utils/customDashboards";
-import { canAccessPortal, isStandalonePortal, STANDALONE_PORTALS } from "../../utils/portalMapping";
+import { canOpenPlatform, STANDALONE_PORTALS } from "../../utils/portalMapping";
 
 function LogoIcon({ src, alt, contain = false }) {
   return (
@@ -47,8 +47,8 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
       buttonText: "Open HCL SATHEE",
       onClick: openHCLSathee,
       partner: "Hindustan Copper Limited (HCL)",
-      // Users of a standalone Kendra (e.g. Barmer) see HCL SATHEE but can't open it.
-      locked: !isAdmin && isStandalonePortal(userCentre),
+      // Everyone sees every platform, but only opens their own (admins: all).
+      locked: !canOpenPlatform("HCL SATHEE", userCentre, userRole),
       badge: "Partner",
     },
     {
@@ -60,6 +60,7 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
       onClick: openKendras,
       partner: "IIT Kanpur",
       badge: "Partner",
+      locked: !canOpenPlatform("SATHEE", userCentre, userRole),
     },
   ];
 
@@ -79,7 +80,7 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
     buttonText: "Open Kendra",
     onClick: () => openPortal?.(portal.title),
     badge: "Partner",
-    locked: !canAccessPortal(userCentre, portal.title, userRole),
+    locked: !canOpenPlatform(portal.title, userCentre, userRole),
   }));
 
   const customCards = customDashboards.map((dashboard) => ({
