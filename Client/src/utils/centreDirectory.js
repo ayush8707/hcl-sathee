@@ -33,7 +33,7 @@ const CENTRE_DIRECTORY_BY_KEY = {
   SATHEEBARMER: {
     id: "RJ-BA-01",
     place: "Shiv, Barmer, Rajasthan",
-    address: "Government Senior Secondary School, Near Baba Garib Math Ji, Shiv, Rajasthan 344701",
+    address: "Bharti Vidhya Mandir Sr. Sec. School, Shiv, Barmer, Rajasthan 344701",
   },
 };
 
