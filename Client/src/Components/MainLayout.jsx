@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { LogOut, ChevronLeft, ChevronRight, Menu, X, Building2, LayoutGrid } from "lucide-react";
 import HCLLogo from "../assets/HCL.svg";
 import SatheeLogo from "../assets/sathee.svg";
-import { isStandalonePortal } from "../utils/portalMapping";
+import { getCanonicalCentreKey, isStandalonePortal, STANDALONE_PORTALS } from "../utils/portalMapping";
 
 function NavButtons({
   navItems,
@@ -55,6 +55,11 @@ export function MainLayout({
   // Standalone Kendras (e.g. SATHEE Barmer) are not part of HCL SATHEE, so they
   // show the SATHEE logo and link back to the platform list, not HCL centres.
   const standalone = isStandalonePortal(portalName);
+  // Kendras listed on the SATHEE page (Delhi, Odisha, ...) go back to that
+  // list; Barmer has its own card on the platform screen, so it goes there.
+  const satheeKendra =
+    standalone &&
+    !STANDALONE_PORTALS.some((p) => getCanonicalCentreKey(p.title) === getCanonicalCentreKey(portalName));
   const showOtherCentres = isAdminArea && location.pathname !== "/centres" && !standalone;
 
   useEffect(() => {
@@ -110,11 +115,11 @@ export function MainLayout({
           {standalone ? (
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => navigate(satheeKendra ? "/kendras" : "/")}
               className="bg-white/20 hover:bg-white/30 text-slate-900 px-3 sm:px-5 py-2 rounded-2xl text-sm font-medium flex items-center gap-2 transition-colors"
             >
-              <LayoutGrid size={18} />
-              <span className="hidden sm:inline">Platforms</span>
+              {satheeKendra ? <Building2 size={18} /> : <LayoutGrid size={18} />}
+              <span className="hidden sm:inline">{satheeKendra ? "SATHEE Kendras" : "Platforms"}</span>
             </button>
           ) : null}
 
