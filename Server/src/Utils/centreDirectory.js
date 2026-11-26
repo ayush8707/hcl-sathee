@@ -1,4 +1,5 @@
 const { getCanonicalCentreKey } = require("./centreMatch");
+const { SATHEE_KENDRAS } = require("./satheeKendras");
 
 /**
  * Hardcoded per-centre Kendra IDs for the 3 default centres — mirrors
@@ -11,7 +12,14 @@ const CENTRE_DIRECTORY_BY_KEY = {
   HCLJHARKHAND: "JH-EM-01",
   HCLMADHYAPRADESH: "MP-BT-01",
   SATHEEBARMER: "RJ-BA-01",
+  ...Object.fromEntries(SATHEE_KENDRAS.map((k) => [getCanonicalCentreKey(k.name), k.id])),
 };
+
+const shortPrefix = (kendraId) => kendraId.replace(/-\d+$/, "");
+const prefixCounts = Object.values(CENTRE_DIRECTORY_BY_KEY).reduce((counts, id) => {
+  counts[shortPrefix(id)] = (counts[shortPrefix(id)] || 0) + 1;
+  return counts;
+}, {});
 
 /** Accepts a centre name or a portal title (e.g. "HCL SATHEE RAJASTHAN"). */
 const getCentreId = (centreNameOrPortalName = "") => {
@@ -26,7 +34,11 @@ const getCentreId = (centreNameOrPortalName = "") => {
  */
 const getStudentIdPrefix = (centreNameOrPortalName = "") => {
   const kendraId = getCentreId(centreNameOrPortalName);
-  return kendraId ? kendraId.replace(/-\d+$/, "") : null;
+  if (!kendraId) return null;
+  // Several Kendras in one district (e.g. the five Erode Kendras, TN-EE-01 to
+  // TN-EE-05) would share "TN-EE" and give out the same student IDs, so they
+  // keep the full Kendra ID: TN-EE-02-001.
+  return prefixCounts[shortPrefix(kendraId)] > 1 ? kendraId : shortPrefix(kendraId);
 };
 
 module.exports = { getCentreId, getStudentIdPrefix };

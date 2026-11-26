@@ -1,3 +1,4 @@
+import { SATHEE_KENDRAS } from "./satheeKendras";
 // Order matters: Barmer is also in Rajasthan, so its rule must come before the
 // state-wide Rajasthan (Jhunjhunu) rule.
 const CENTRE_RULES = [
@@ -71,18 +72,13 @@ export const PORTAL_OPTIONS = [
   { title: "HCL SATHEE MADHYA PRADESH", subtitle: "Madhya Pradesh Learning Portal" },
 ];
 
-// SATHEE Kendra states, shown on the SATHEE platform page (from
-// satheekendra.com). Each is its own platform, separate from HCL SATHEE.
-// Mirrors SATHEE_STATE_CENTRES in Server/src/Models/Centre.js.
-export const SATHEE_PORTAL_OPTIONS = [
-  { title: "SATHEE DELHI", label: "Delhi", subtitle: "Delhi Learning Portal" },
-  { title: "SATHEE JAMMU AND KASHMIR", label: "Jammu & Kashmir", subtitle: "Jammu & Kashmir Learning Portal" },
-  { title: "SATHEE NAGALAND", label: "Nagaland", subtitle: "Nagaland Learning Portal" },
-  { title: "SATHEE ODISHA", label: "Odisha", subtitle: "Odisha Learning Portal" },
-  { title: "SATHEE TAMIL NADU", label: "Tamil Nadu", subtitle: "Tamil Nadu Learning Portal" },
-  { title: "SATHEE TELANGANA", label: "Telangana", subtitle: "Telangana Learning Portal" },
-  { title: "SATHEE UTTARAKHAND", label: "Uttarakhand", subtitle: "Uttarakhand Learning Portal" },
-];
+// SATHEE Kendras shown on the SATHEE platform page, one card per Kendra.
+// Each is its own platform, separate from HCL SATHEE.
+export const SATHEE_PORTAL_OPTIONS = SATHEE_KENDRAS.map((kendra) => ({
+  title: kendra.name,
+  label: kendra.label,
+  subtitle: kendra.state,
+}));
 
 // Kendras that are their own platform rather than part of HCL SATHEE. They get
 // a card on the first "Choose Your Platform" screen instead of the state list.

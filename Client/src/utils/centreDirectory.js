@@ -1,4 +1,5 @@
 import { getCanonicalCentreKey } from "./portalMapping";
+import { SATHEE_KENDRAS } from "./satheeKendras";
 
 /**
  * Hardcoded per-centre directory info for the default centres — a
@@ -22,13 +23,10 @@ const CENTRE_DIRECTORY_BY_KEY = {
     place: "Malanjkhand, Balaghat, Madhya Pradesh",
     address: "SATHEE Kendra Malanjkhand, Township DAV School Malanjkhand",
   },
-  SATHEEDELHI: { place: "South Delhi, Delhi" },
-  SATHEEJAMMUANDKASHMIR: { place: "Srinagar and Jammu, J&K" },
-  SATHEENAGALAND: { place: "Dimapur and Kohima, Nagaland" },
-  SATHEEODISHA: { place: "Sambalpur, Odisha" },
-  SATHEETAMILNADU: { place: "3 Kendras, Tamil Nadu" },
-  SATHEETELANGANA: { place: "Hyderabad, Telangana" },
-  SATHEEUTTARAKHAND: { place: "Dehradun and Khatima, Uttarakhand" },
+  // SATHEE Kendras on the SATHEE platform page (see ./satheeKendras.js).
+  ...Object.fromEntries(
+    SATHEE_KENDRAS.map((k) => [getCanonicalCentreKey(k.name), { id: k.id, place: `${k.district}, ${k.state}` }])
+  ),
   // Funded by Hero Future Energies (not part of HCL SATHEE).
   SATHEEBARMER: {
     id: "RJ-BA-01",
