@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { HELP_EMAIL } from "../../config/contact";
-import logo from "../../assets/sathee.svg";
+import logo from "../../assets/sathee-logo.png";
 
 const LAST_UPDATED = "21 October 2026";
 
@@ -174,7 +174,7 @@ export default function LegalPage({ page = "privacy" }) {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="SATHEE logo" className="h-9 w-9 rounded-full object-cover" />
+            <img src={logo} alt="SATHEE logo" className="h-9 w-9 rounded-lg bg-white p-0.5 object-contain" />
             <span className="font-semibold text-slate-900">SATHEE Kendra Portal</span>
           </div>
           <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline">

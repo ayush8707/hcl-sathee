@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowUpRight, Globe, Lock, LogOut, Plus, X } from "lucide-react";
 import HCLLogo from "../../assets/HCL.svg";
-import SatheeLogo from "../../assets/sathee.svg";
+import SatheeLogo from "../../assets/sathee-logo.png";
 import { CSR_PARTNERS } from "../../config/csrPartners";
 import InstallAppButton from "../../Components/common/InstallAppButton";
 import AddDashboardModal from "../../Components/Selector/AddDashboardModal";
@@ -55,7 +55,7 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
       id: "sathee",
       title: "SATHEE",
       subtitle: "SATHEE Kendras in different states across India",
-      icon: (size) => <LogoIcon src={SatheeLogo} alt="SATHEE" size={size} />,
+      icon: (size) => <LogoIcon src={SatheeLogo} alt="SATHEE" size={size} contain />,
       buttonText: "Open SATHEE",
       onClick: openKendras,
       partner: "IIT Kanpur",
@@ -73,7 +73,7 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
       partnerLogo(portal.partner) ? (
         <LogoIcon src={partnerLogo(portal.partner)} alt={portal.partner} size={size} contain />
       ) : (
-        <LogoIcon src={SatheeLogo} alt={portal.title} size={size} />
+        <LogoIcon src={SatheeLogo} alt={portal.title} size={size} contain />
       ),
     partner: portal.partner,
     buttonText: "Open Kendra",
@@ -118,7 +118,7 @@ export default function DashboardSelect({ openHCLSathee, openKendras, openPortal
           <img
             src={SatheeLogo}
             alt="SATHEE Logo"
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover shrink-0"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white p-0.5 object-contain shrink-0"
           />
           <div className="min-w-0">
             <p className="font-semibold tracking-tight text-black truncate text-sm sm:text-base">

@@ -7,7 +7,7 @@ import { LanguageSwitch, LoginLanguageProvider, useLoginLanguage } from "../../i
 import { CSR_PARTNERS } from "../../config/csrPartners";
 import { HELP_EMAIL } from "../../config/contact";
 import InstallAppButton from "../../Components/common/InstallAppButton";
-import logo from "../../assets/sathee.svg";
+import logo from "../../assets/sathee-logo.png";
 
 const HIGHLIGHTS = [
   { icon: CalendarCheck, key: "highlightAttendance" },
@@ -57,13 +57,12 @@ function Partners({ className = "" }) {
 function WatermarkLayout({ onLoginSuccess }) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F1F5F9] text-white flex flex-col">
-      {/* Cropped to the central sun/people/book so the logo's small text and
-          outer emblems do not show as smudges. */}
+      {/* Very light SATHEE logo in the corner. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-32 -right-32 hidden h-[560px] w-[560px] select-none overflow-hidden rounded-full opacity-[0.06] grayscale md:block"
+        className="pointer-events-none absolute -bottom-32 -right-32 hidden h-[560px] w-[560px] select-none opacity-[0.06] grayscale md:block"
       >
-        <img src={logo} alt="" className="h-full w-full scale-[1.6] object-cover" />
+        <img src={logo} alt="" className="h-full w-full object-contain" />
       </div>
 
       <div className="relative flex justify-end gap-2 px-6 pt-5">
@@ -93,19 +92,17 @@ function SplitLayout({ onLoginSuccess }) {
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-white lg:grid lg:grid-cols-2">
       <aside className="relative hidden overflow-hidden border-r border-slate-200 bg-white lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24">
-        {/* Very light SATHEE logo, centred and kept fully inside the white panel.
-            Cropped to the central sun/people/book so the logo's small text
-            doesn't show as smudges. */}
+        {/* Very light SATHEE logo, centred and kept fully inside the white panel. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 w-[min(560px,85%)] aspect-square -translate-x-1/2 -translate-y-1/2 select-none overflow-hidden rounded-full opacity-[0.06]"
+          className="pointer-events-none absolute left-1/2 top-1/2 w-[min(560px,85%)] aspect-square -translate-x-1/2 -translate-y-1/2 select-none opacity-[0.06]"
         >
-          <img src={logo} alt="" className="h-full w-full scale-[1.6] object-cover" />
+          <img src={logo} alt="" className="h-full w-full object-contain" />
         </div>
 
         <div className="relative max-w-md">
           <div className="h-28 w-28 overflow-hidden rounded-full border border-slate-200 bg-white shadow-lg">
-            <img src={logo} alt="SATHEE logo" className="h-full w-full rounded-full object-cover" />
+            <img src={logo} alt="SATHEE logo" className="h-full w-full object-contain p-3" />
           </div>
 
           <h1 className="mt-8 text-4xl font-bold tracking-tight text-slate-900">SATHEE</h1>
