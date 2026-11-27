@@ -60,6 +60,16 @@ export const isHclPartnerRole = (userRole = "") =>
 export const isSatheeMitraRole = (userRole = "") =>
   String(userRole || "").trim().toUpperCase() === "SATHEE MITRA";
 
+// A visiting mentor (about once a week) with no login; the Kendra's SATHEE
+// MITRA records their visits.
+export const isSatheeVishistRole = (userRole = "") =>
+  String(userRole || "").toUpperCase().replace(/[^A-Z]/g, "") === "SATHEEVISHIST";
+
+// A SATHEE Vishist, including ones added before it was its own role (a SATHEE
+// MITRA with the "Is Vishist?" tick).
+export const isVishistUser = (user = {}) =>
+  isSatheeVishistRole(user.role) || (isSatheeMitraRole(user.role) && Boolean(user.isVishist));
+
 export const canEnterAdminDashboard = (userRole = "") => isAdminRole(userRole);
 
 export const canEnterPartnerDashboard = (userRole = "") => isHclPartnerRole(userRole);

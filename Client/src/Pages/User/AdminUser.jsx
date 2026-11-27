@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, GraduationCap, HeartHandshake, Plus, Shield, UsersRound } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, FileSpreadsheet, GraduationCap, HeartHandshake, Plus, Shield, UsersRound } from "lucide-react";
 
 import UserFilter from "../../Components/User/UserFilter";
 import UserToolbar from "../../Components/User/UserToolbar";
@@ -8,25 +8,27 @@ import NewUser from "../../Components/User/NewUser";
 import ImportUsersModal from "../../Components/User/ImportUsersModal";
 import { MainLayout } from "../../Components/MainLayout";
 import { createUser, fetchUsers, importUsers, removeUser, resendInvite } from "../../services/users";
-import { displayRole, matchesPortalCentre } from "../../utils/portalMapping";
+import { displayRole, isSatheeVishistRole, matchesPortalCentre } from "../../utils/portalMapping";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getInitials } from "../../utils/studentMetrics";
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { sortTableRows } from "../../utils/tableSort";
 import { downloadTableXlsx } from "../../utils/exportTable";
 
-const ROLE_FILTERS = ["All Users", "ADMIN", "SATHEE MITRA", "HCL PARTNER"];
+const ROLE_FILTERS = ["All Users", "ADMIN", "SATHEE MITRA", "SATHEE VISHIST", "HCL PARTNER"];
 
 const roleBadge = {
   ADMIN: { bg: "bg-blue-100 text-blue-700 border border-blue-200", icon: <Shield size={11} className="inline mr-1" /> },
   "SATHEE MITRA": { bg: "bg-emerald-100 text-emerald-700 border border-emerald-200", icon: <GraduationCap size={11} className="inline mr-1" /> },
   "HCL PARTNER": { bg: "bg-purple-100 text-purple-700 border border-purple-200", icon: <HeartHandshake size={11} className="inline mr-1" /> },
+  "SATHEE VISHIST": { bg: "bg-violet-100 text-violet-700 border border-violet-200", icon: <BookOpen size={11} className="inline mr-1" /> },
 };
 
 const avatarColor = {
   ADMIN: "bg-blue-600",
   "SATHEE MITRA": "bg-emerald-600",
   "HCL PARTNER": "bg-purple-600",
+  "SATHEE VISHIST": "bg-violet-600",
 };
 
 const normalizeUser = (user) => ({
@@ -145,7 +147,10 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
       setActiveFilter(normalizedUser.role);
       setSearch("");
 
-      if (!result.emailSent) {
+      if (isSatheeVishistRole(normalizedUser.role)) {
+        // No invite email for a Vishist: they don't log in.
+        setNotice(`${normalizedUser.name} added as a SATHEE Vishist. The SATHEE MITRA will be asked about their visits.`);
+      } else if (!result.emailSent) {
         setUsersError(
           result.emailError
             ? `User saved, but email failed: ${result.emailError}`

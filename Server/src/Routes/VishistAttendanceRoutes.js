@@ -1,9 +1,10 @@
 const express = require("express");
 const multer = require("multer");
 const { uploadConcurrencyLimiter } = require("../Utils/uploadConcurrency");
-const { authenticate, requireAdminOrMitra } = require("../Middleware/auth");
+const { authenticate, requireAdmin, requireAdminOrMitra } = require("../Middleware/auth");
 const {
   getVishistAttendance,
+  getDueVisits,
   markVishistAttendance,
   approveVishistAttendance,
 } = require("../Controllers/VishistAttendanceController");
@@ -21,7 +22,9 @@ const upload = multer({
 });
 
 router.get("/", authenticate, requireAdminOrMitra, getVishistAttendance);
+router.get("/due", authenticate, requireAdminOrMitra, getDueVisits);
 router.post("/", authenticate, requireAdminOrMitra, uploadConcurrencyLimiter, upload.single("photo"), markVishistAttendance);
-router.patch("/:id/approve", authenticate, requireAdminOrMitra, approveVishistAttendance);
+// Only admins approve, so nobody approves a visit they recorded themselves.
+router.patch("/:id/approve", authenticate, requireAdmin, approveVishistAttendance);
 
 module.exports = router;

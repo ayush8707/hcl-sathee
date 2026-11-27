@@ -1,4 +1,4 @@
-const { getSupabase, assertNoError, UNIQUE_VIOLATION, paginateByCreatedAt } = require("../config/supabase");
+const { getSupabase, assertNoError, UNIQUE_VIOLATION, paginateByCreatedAt, selectAllRows } = require("../config/supabase");
 const { toDate } = require("../Utils/firestoreHelpers");
 
 const TABLE = "users";
@@ -35,6 +35,17 @@ const normalizeAvailableDays = (value) => {
 const isMitraRole = (role = "") =>
   String(role || "").trim().toUpperCase() === "SATHEE MITRA";
 
+const isVishistRole = (role = "") =>
+  String(role || "").trim().toUpperCase().replace(/\s+/g, " ") === "SATHEE VISHIST";
+
+// Roles that have weekdays: a SATHEE MITRA's, or the days a Vishist visits.
+const hasDays = (role) => isMitraRole(role) || isVishistRole(role);
+
+// The subject column was added later (sathee_vishist.sql). Until it exists,
+// users are still saved, just without a subject.
+const isMissingColumnError = (error) =>
+  Boolean(error) && (error.code === "PGRST204" || error.code === "42703" || /subject/i.test(error.message || ""));
+
 const normalizeIsVishist = (role, value) => {
   if (!isMitraRole(role)) return null;
   return value === true || value === "true" || value === 1 || value === "1";
@@ -52,6 +63,7 @@ const toApiUser = (row) => {
     centre: row.centre ?? null,
     pushSubscriptions: Array.isArray(row.push_subscriptions) ? row.push_subscriptions : [],
     availableDays: normalizeAvailableDays(row.available_days),
+    subject: row.subject ?? null,
     lastLoginAt: toDate(row.last_login_at),
     created_at: toDate(row.created_at),
     updated_at: toDate(row.updated_at),
@@ -60,6 +72,7 @@ const toApiUser = (row) => {
   if (isMitraRole(row.role)) {
     user.isVishist = Boolean(normalizeIsVishist(row.role, row.is_vishist));
   }
+  if (isVishistRole(row.role)) user.isVishist = true;
 
   return user;
 };
@@ -69,6 +82,22 @@ const findAll = async ({ limit = 200, cursor } = {}) => {
   const users = rows.map(toApiUser);
   Object.defineProperty(users, "nextCursor", { value: nextCursor, enumerable: false });
   return users;
+};
+
+/**
+ * Every SATHEE Vishist (all pages), including ones added before it was its
+ * own role (a SATHEE MITRA with is_vishist set).
+ */
+const findVishists = async () => {
+  const rows = await selectAllRows(
+    () =>
+      getSupabase()
+        .from(TABLE)
+        .select("*")
+        .or("role.eq.SATHEE VISHIST,and(role.eq.SATHEE MITRA,is_vishist.eq.true)"),
+    "Failed to load SATHEE Vishists"
+  );
+  return rows.map(toApiUser);
 };
 
 const findByEmail = async (email) => {
@@ -122,14 +151,22 @@ const create = async (data) => {
     password: data.password == null ? null : String(data.password),
     role,
     centre: data.centre ?? null,
-    available_days: isMitraRole(role) ? normalizeAvailableDays(data.availableDays) : [],
+    available_days: hasDays(role) ? normalizeAvailableDays(data.availableDays) : [],
   };
 
   if (isMitraRole(role)) {
     payload.is_vishist = Boolean(normalizeIsVishist(role, data.isVishist));
   }
+  const subject = String(data.subject ?? "").trim();
+  if (isVishistRole(role) && subject) payload.subject = subject;
 
-  const { data: row, error } = await getSupabase().from(TABLE).insert(payload).select("*").single();
+  const insert = (body) => getSupabase().from(TABLE).insert(body).select("*").single();
+  let { data: row, error } = await insert(payload);
+  if (error && payload.subject && isMissingColumnError(error)) {
+    console.warn("users has no subject column yet; run sathee_vishist.sql");
+    delete payload.subject;
+    ({ data: row, error } = await insert(payload));
+  }
   if (error) {
     if (error.code === UNIQUE_VIOLATION) {
       const duplicate = duplicateErrorFor(error);
@@ -169,8 +206,9 @@ const update = async (id, data) => {
   if (data.centre !== undefined) patch.centre = data.centre;
 
   if (Object.prototype.hasOwnProperty.call(data, "availableDays")) {
-    patch.available_days = isMitraRole(nextRole) ? normalizeAvailableDays(data.availableDays) : [];
+    patch.available_days = hasDays(nextRole) ? normalizeAvailableDays(data.availableDays) : [];
   }
+  if (data.subject !== undefined) patch.subject = String(data.subject ?? "").trim() || null;
 
   if (Object.prototype.hasOwnProperty.call(data, "isVishist") || data.role != null) {
     patch.is_vishist = isMitraRole(nextRole)
@@ -185,12 +223,13 @@ const update = async (id, data) => {
       : null;
   }
 
-  const { data: row, error } = await getSupabase()
-    .from(TABLE)
-    .update(patch)
-    .eq("id", id)
-    .select("*")
-    .single();
+  const save = (body) => getSupabase().from(TABLE).update(body).eq("id", id).select("*").single();
+  let { data: row, error } = await save(patch);
+  if (error && "subject" in patch && isMissingColumnError(error)) {
+    console.warn("users has no subject column yet; run sathee_vishist.sql");
+    delete patch.subject;
+    ({ data: row, error } = await save(patch));
+  }
   if (error) {
     if (error.code === UNIQUE_VIOLATION) {
       const duplicate = duplicateErrorFor(error);
@@ -318,6 +357,7 @@ module.exports = {
   normalizeAvailableDays,
   normalizeIsVishist,
   findAll,
+  findVishists,
   findByEmail,
   findById,
   findByPhone,

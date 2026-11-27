@@ -4,6 +4,11 @@ const { verifyInviteToken } = require("../Utils/inviteToken");
 const { generateResetToken, verifyResetToken } = require("../Utils/resetToken");
 const { generateOtp, hashOtp, verifyOtpHash, OTP_TTL_MS, MAX_OTP_ATTEMPTS } = require("../Utils/otp");
 const { sendPasswordResetOtpEmail } = require("../Utils/sendEmail");
+const { isSatheeVishistRole } = require("../Utils/centreMatch");
+
+// SATHEE Vishists never log in: the Kendra's SATHEE MITRA records their visits.
+const NO_LOGIN_MESSAGE =
+  "SATHEE Vishists don't log in. The Kendra's SATHEE MITRA records your visits.";
 const {
   hashPassword,
   verifyPassword,
@@ -48,6 +53,7 @@ exports.createPassword = async (req, res) => {
 
     const user = await findUserOrFail(res, payload.email);
     if (!user) return;
+    if (isSatheeVishistRole(user.role)) return fail(res, 403, NO_LOGIN_MESSAGE);
     if (user.name?.trim() !== payload.name?.trim()) {
       return fail(res, 400, "Name does not match the invited account");
     }
@@ -79,7 +85,7 @@ exports.requestPasswordResetOtp = async (req, res) => {
     // Always return the same generic message to prevent email enumeration
     const genericResponse = "If an account exists for this email, a verification code has been sent.";
 
-    if (!user) {
+    if (!user || isSatheeVishistRole(user.role)) {
       // Log this for monitoring but don't tell the client
       return ok(res, { message: genericResponse });
     }
@@ -224,6 +230,7 @@ exports.login = async (req, res) => {
     const user = await User.findByEmail(email);
     const lookupMs = Date.now() - startedAt;
     if (!user) return fail(res, 401, "Invalid credentials");
+    if (isSatheeVishistRole(user.role)) return fail(res, 403, NO_LOGIN_MESSAGE);
 
     const { valid, needsRehash } = await verifyPassword(password, user.password);
     const passwordMs = Date.now() - startedAt - lookupMs;

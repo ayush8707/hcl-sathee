@@ -1,309 +1,94 @@
-import { useEffect, useRef, useState } from "react";
-import { Camera, ImageOff, Check } from "lucide-react";
-import { fetchVishistAttendance, markVishistAttendance, approveVishistAttendance } from "../../services/vishistAttendance";
-import { fetchVishistMentors } from "../../services/users";
+import { useCallback, useEffect, useState } from "react";
+import { fetchVishistAttendanceRange } from "../../services/vishistAttendance";
+import { VishistDueCard } from "./VishistDueCard";
+import { VishistStatus } from "./VishistStatus";
 
-const toInputDate = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+const RECENT_DAYS = 30;
+
+const isoDate = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 };
 
+const niceDate = (iso) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+
+/**
+ * SATHEE MITRA's "Vishist Attendance" screen: answer "Did they come?" for
+ * any visit waiting, then see the Kendra's recent Vishist visits.
+ */
 export default function VishistAttendanceUpload({ portalName, isCustomCentre = false }) {
-    const today = toInputDate();
-    const [vishistMitras, setVishistMitras] = useState([]);
-    const [selectedId, setSelectedId] = useState("");
-    const [subject, setSubject] = useState("");
-    const [topicTaught, setTopicTaught] = useState("");
-    const [photoFile, setPhotoFile] = useState(null);
-    const [photoPreview, setPhotoPreview] = useState(null);
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState("");
-    const [message, setMessage] = useState("");
-    const [records, setRecords] = useState([]);
-    const [loadingRecords, setLoadingRecords] = useState(true);
-    const [approvingId, setApprovingId] = useState(null);
-    const previewUrlRef = useRef(null);
-    const fileInputRef = useRef(null);
+  const [records, setRecords] = useState(null);
+  const [error, setError] = useState("");
 
-    const handleApprove = async (id) => {
-        setApprovingId(id);
-        try {
-            await approveVishistAttendance(id);
-            loadRecords();
-        } catch (err) {
-            console.error("Approve Vishist attendance error:", err);
-            setError(err.response?.data?.message || "Unable to approve attendance");
-        } finally {
-            setApprovingId(null);
-        }
+  const load = useCallback(async () => {
+    const to = new Date();
+    const from = new Date(to);
+    from.setDate(to.getDate() - (RECENT_DAYS - 1));
+    try {
+      const rows = await fetchVishistAttendanceRange(isoDate(from), isoDate(to), portalName);
+      setRecords([...rows].sort((a, b) => String(b.date).localeCompare(String(a.date))));
+    } catch {
+      setError("Recent visits could not be loaded right now.");
+    }
+  }, [portalName]);
+
+  useEffect(() => {
+    let active = true;
+    const to = new Date();
+    const from = new Date(to);
+    from.setDate(to.getDate() - (RECENT_DAYS - 1));
+    fetchVishistAttendanceRange(isoDate(from), isoDate(to), portalName)
+      .then((rows) => active && setRecords([...rows].sort((a, b) => String(b.date).localeCompare(String(a.date)))))
+      .catch(() => active && setError("Recent visits could not be loaded right now."));
+    return () => {
+      active = false;
     };
+  }, [portalName]);
 
-    const selectedVishist = vishistMitras.find((m) => String(m.id) === String(selectedId)) || null;
+  if (isCustomCentre) {
+    return <p className="px-6 py-10 text-center text-sm text-slate-500">Vishist attendance isn&apos;t available for this centre.</p>;
+  }
 
-    const loadRecords = async () => {
-        if (isCustomCentre) {
-            setRecords([]);
-            setLoadingRecords(false);
-            return;
-        }
+  return (
+    <div className="space-y-6">
+      <VishistDueCard portalName={portalName} showEmpty onRecorded={load} />
 
-        setLoadingRecords(true);
-        try {
-            const data = await fetchVishistAttendance(today, portalName);
-            setRecords(data);
-        } catch (err) {
-            console.error("Load Vishist attendance error:", err);
-        } finally {
-            setLoadingRecords(false);
-        }
-    };
-
-    useEffect(() => {
-        loadRecords();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [today, portalName, isCustomCentre]);
-
-    useEffect(() => {
-        if (isCustomCentre) {
-            setVishistMitras([]);
-            return;
-        }
-
-        fetchVishistMentors()
-            .then(setVishistMitras)
-            .catch((err) => console.error("Load Vishist mentors error:", err));
-    }, [isCustomCentre]);
-
-    const handleFileChange = (e) => {
-        // Keep the current photo if the picker was dismissed without a choice.
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-        previewUrlRef.current = URL.createObjectURL(file);
-        setPhotoFile(file);
-        setPhotoPreview(previewUrlRef.current);
-    };
-
-    const clearPhoto = () => {
-        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-        previewUrlRef.current = null;
-        setPhotoFile(null);
-        setPhotoPreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-    };
-
-    const resetForm = () => {
-        setSelectedId("");
-        setSubject("");
-        setTopicTaught("");
-        clearPhoto();
-        setError("");
-        setMessage("");
-    };
-
-    useEffect(() => () => {
-        if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    }, []);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setMessage("");
-
-        const cleanSubject = subject.trim();
-        const cleanTopic = topicTaught.trim();
-
-        if (!selectedId) return setError("Select a SATHEE VISHIST name from the dropdown.");
-        if (!selectedVishist) return setError("The selected Vishist could not be found. Please choose another name.");
-        if (!cleanSubject) return setError("Enter the subject taught.");
-        if (!cleanTopic) return setError("Enter the topic taught.");
-
-        setSubmitting(true);
-        try {
-            await markVishistAttendance({
-                vishistUserId: selectedId,
-                subject: cleanSubject,
-                topicTaught: cleanTopic,
-                date: today,
-                photoFile,
-            });
-            setMessage("Vishist attendance marked successfully.");
-            resetForm();
-            await loadRecords();
-        } catch (err) {
-            console.error("Mark Vishist attendance error:", err);
-            setError(err.response?.data?.message || "Unable to mark attendance. Please try again.");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">SATHEE VISHIST Name</label>
-                        <select
-                            value={selectedId}
-                            onChange={(e) => setSelectedId(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-blue-500"
-                        >
-                            <option value="">Select a name</option>
-                            {vishistMitras.map((m) => (
-                                <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
-                        <input
-                            type="text"
-                            value={selectedVishist?.email || ""}
-                            readOnly
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-500 cursor-not-allowed"
-                            placeholder="Auto-filled on selection"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Subject</label>
-                        <input
-                            type="text"
-                            value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
-                            placeholder="e.g. Physics"
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Topic Taught</label>
-                        <input
-                            type="text"
-                            value={topicTaught}
-                            onChange={(e) => setTopicTaught(e.target.value)}
-                            placeholder="e.g. Newton's Laws of Motion"
-                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="mb-1.5 block text-sm font-medium text-slate-700">Photo (optional)</label>
-                    <div className="flex items-center gap-4">
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            aria-label={photoFile ? "Change photo" : "Upload photo"}
-                            className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 transition-colors hover:border-blue-400 hover:bg-blue-50"
-                        >
-                            {photoPreview ? (
-                                <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
-                            ) : (
-                                <ImageOff size={22} className="text-slate-400" />
-                            )}
-                        </button>
-
-                        <div className="min-w-0 text-sm">
-                            {photoFile ? (
-                                <>
-                                    <p className="truncate font-medium text-slate-700">{photoFile.name}</p>
-                                    <div className="mt-1 flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="font-medium text-blue-600 hover:underline"
-                                        >
-                                            Change
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={clearPhoto}
-                                            className="font-medium text-slate-500 hover:underline"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="font-medium text-blue-600 hover:underline"
-                                >
-                                    Choose a photo
-                                </button>
-                            )}
-                        </div>
-
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/jpg"
-                            onChange={handleFileChange}
-                            className="hidden"
-                        />
-                    </div>
-                </div>
-
-                {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-                {message ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p> : null}
-
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                >
-                    <Camera size={16} />
-                    {submitting ? "Saving…" : "Mark Vishist Attendance"}
-                </button>
-            </form>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h4 className="mb-3 text-sm font-semibold text-slate-900">Today's Vishist Attendance</h4>
-                {loadingRecords ? (
-                    <p className="text-sm text-slate-500">Loading…</p>
-                ) : records.length === 0 ? (
-                    <p className="text-sm text-slate-400">No Vishist attendance marked yet today.</p>
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <h3 className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">
+          Recent Vishist visits (last {RECENT_DAYS} days)
+        </h3>
+        {error ? (
+          <p className="px-5 py-6 text-sm text-red-700">{error}</p>
+        ) : records === null ? (
+          <p className="px-5 py-6 text-sm text-slate-400">Loading…</p>
+        ) : !records.length ? (
+          <p className="px-5 py-6 text-sm text-slate-500">No visits recorded yet.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {records.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 px-5 py-3">
+                {r.photoUrl ? (
+                  <img src={r.photoUrl} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
                 ) : (
-                    <div className="space-y-3">
-                        {records.map((r) => (
-                            <div key={r.id} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                {r.photoUrl ? (
-                                    <img src={r.photoUrl} alt={r.vishistName} className="h-12 w-12 rounded-lg object-cover" />
-                                ) : (
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-200 text-slate-400">
-                                        <ImageOff size={16} />
-                                    </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium text-slate-900">{r.vishistName}</p>
-                                    <p className="truncate text-xs text-slate-500">{r.subject} — {r.topicTaught}</p>
-                                </div>
-                                {r.status === "approved" ? (
-                                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                        <Check size={12} /> Approved
-                                    </span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        disabled={approvingId === r.id}
-                                        onClick={() => handleApprove(r.id)}
-                                        className="shrink-0 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                                    >
-                                        {approvingId === r.id ? "Approving…" : "Approve"}
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                  <span className="h-11 w-11 shrink-0 rounded-lg bg-slate-100" />
                 )}
-            </div>
-        </div>
-    );
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">{r.vishistName}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {niceDate(r.date)}
+                    {r.subject ? ` · ${r.subject}` : ""}
+                    {r.topicTaught ? ` · ${r.topicTaught}` : ""}
+                  </p>
+                </div>
+                <VishistStatus status={r.status} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
 }

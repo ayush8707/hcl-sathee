@@ -5,6 +5,7 @@ const {
   getCanonicalCentreKey,
   isSatheeMitraRole,
   isHclPartnerRole,
+  isVishistUser,
 } = require("../Utils/centreMatch");
 
 exports.getCentres = wrap(
@@ -14,11 +15,6 @@ exports.getCentres = wrap(
   },
   { label: "Get Centres Error", message: "Failed to fetch centres" }
 );
-
-const isVishistUser = (user) => {
-  const v = user.isVishist;
-  return v === true || v === "true" || v === 1 || v === "1";
-};
 
 /**
  * Per-centre headcounts for the admin "Other Centres" page: students, Sathee
@@ -52,7 +48,6 @@ exports.getCentresOverview = wrap(
       const inCentre = (doc) => getCanonicalCentreKey(doc.centre) === key;
 
       const centreUsers = users.filter(inCentre);
-      const mitras = centreUsers.filter((u) => isSatheeMitraRole(u.role));
 
       return {
         id: centre.id,
@@ -60,8 +55,8 @@ exports.getCentresOverview = wrap(
         isDefault: String(centre.id).startsWith("default:"),
         counts: {
           students: students.filter(inCentre).length,
-          satheeMitra: mitras.filter((u) => !isVishistUser(u)).length,
-          satheeVishist: mitras.filter(isVishistUser).length,
+          satheeMitra: centreUsers.filter((u) => isSatheeMitraRole(u.role) && !isVishistUser(u)).length,
+          satheeVishist: centreUsers.filter(isVishistUser).length,
           hclPartner: centreUsers.filter((u) => isHclPartnerRole(u.role)).length,
         },
       };

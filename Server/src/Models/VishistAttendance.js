@@ -45,14 +45,29 @@ const create = async ({
   file,
   markedByUserId,
   markedByName,
+  came = true,
 }) => {
-  if (!vishistUserId || !subject || !topicTaught || !date) {
-    throw new Error("vishistUserId, subject, topicTaught and date are required");
+  if (!vishistUserId || !date) {
+    throw new Error("vishistUserId and date are required");
+  }
+
+  // One answer per Vishist per day.
+  const { data: existing, error: existingError } = await getSupabase()
+    .from(TABLE)
+    .select("id, status")
+    .eq("vishist_user_id", Number(vishistUserId) || vishistUserId)
+    .eq("date", date)
+    .limit(1);
+  assertNoError(existingError, "Failed to check vishist attendance");
+  if (existing?.length) {
+    const err = new Error("This visit has already been recorded");
+    err.status = 409;
+    throw err;
   }
 
   let photoUrl = null;
   let photoPath = null;
-  if (file?.buffer?.length) {
+  if (came && file?.buffer?.length) {
     const uploaded = await uploadPhoto(file, vishistUserId, date);
     photoUrl = uploaded.url;
     photoPath = uploaded.storagePath;
@@ -63,14 +78,15 @@ const create = async ({
     vishist_name: vishistName || null,
     vishist_email: vishistEmail || null,
     centre: centre || null,
-    subject,
-    topic_taught: topicTaught,
+    subject: subject || null,
+    topic_taught: came ? topicTaught || null : null,
     photo_url: photoUrl,
     photo_path: photoPath,
     marked_by_user_id: markedByUserId ?? null,
     marked_by_name: markedByName || null,
     date,
-    status: "pending",
+    // "absent": the Vishist didn't come; nothing to approve.
+    status: came ? "pending" : "absent",
   };
 
   const { data, error } = await getSupabase().from(TABLE).insert(payload).select("*").single();
@@ -90,6 +106,11 @@ const approve = async (recordId, approvedByUserId) => {
   if (!existing) {
     const err = new Error("Vishist attendance record not found");
     err.status = 404;
+    throw err;
+  }
+  if (existing.status === "absent") {
+    const err = new Error("The Vishist didn't come that day, so there is nothing to approve");
+    err.status = 400;
     throw err;
   }
   if (existing.status === "approved") {
@@ -139,4 +160,19 @@ const findByDateRange = async (fromDate, toDateArg, centre = null, status = null
   return rows;
 };
 
-module.exports = { create, findByDate, findByDateRange, approve };
+/** Records for these Vishists from `fromDate` on (for working out due visits). */
+const findForVishists = async (vishistIds, fromDate) => {
+  if (!vishistIds.length) return [];
+  const rows = await selectAllRows(
+    () =>
+      getSupabase()
+        .from(TABLE)
+        .select("*")
+        .in("vishist_user_id", vishistIds)
+        .gte("date", fromDate),
+    "Failed to load vishist attendance"
+  );
+  return rows.map(toApiRecord);
+};
+
+module.exports = { create, findByDate, findByDateRange, findForVishists, approve };

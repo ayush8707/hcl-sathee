@@ -11,6 +11,7 @@ import { ExamProgress } from "../../Components/Dashboard/ExamProgress";
 import { StatTiles } from "../../Components/Dashboard/StatTiles";
 import { LowAttendanceCard } from "../../Components/Dashboard/LowAttendanceCard";
 import { PendingMitraApprovals } from "../../Components/Dashboard/PendingMitraApprovals";
+import { VishistDueCard } from "../../Components/Attendance/VishistDueCard";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
 import { fetchLeaveRequests } from "../../services/leaveRequests";
@@ -149,6 +150,9 @@ export default function AdminDashboard({
         <NotificationSettingsBanner message={notificationMessage} />
 
         <WelcomeBanner portalName={portalName} userName={userName} />
+
+        {/* SATHEE MITRA: "Did the SATHEE Vishist come?" on visit days. */}
+        {variant === "mitra" && !isCustomCentre ? <VishistDueCard portalName={portalName} /> : null}
 
         {isAdmin && !isCustomCentre ? (
           <PendingMitraApprovals portalName={portalName} onReview={() => onNavChange(attendanceNavIndex)} />
