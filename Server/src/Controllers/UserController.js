@@ -10,7 +10,13 @@ const {
   isHclPartnerRole,
   isSatheeMitraRole,
 } = require("../Utils/centreMatch");
-const { isValidPhone10, normalizePhone10 } = require("../Utils/phone");
+const { digitsOnly, isValidPhone10, normalizePhone10 } = require("../Utils/phone");
+const Centre = require("../Models/Centre");
+const {
+  MAX_USER_IMPORT_ROWS,
+  normalizeImportRole,
+  resolveImportCentre,
+} = require("../Utils/userImport");
 
 const VALID_ROLES = ["ADMIN", "SATHEE MITRA", "HCL PARTNER"];
 const TEST_EMAIL_DOMAIN = "@example.com";
@@ -134,79 +140,191 @@ exports.removePushSubscription = wrap(
   { label: "Remove Push Subscription Error", message: "Failed to remove device subscription" }
 );
 
+/**
+ * Creates one invited user and sends the welcome email. Shared by "Add user"
+ * and "Import users from Excel" so both follow the same rules. Returns
+ * { ok: true, user, emailSent, emailError, passwordSetupLink } or
+ * { ok: false, status, message }.
+ */
+const createUserRecord = async ({ name, email, phone, role, centre, availableDays, isVishist }) => {
+  if (!name || !email || !phone || !role) {
+    return { ok: false, status: 400, message: "Name, email, phone number and role are required" };
+  }
+  if (!isValidPhone10(phone)) {
+    return { ok: false, status: 400, message: "Phone number must be exactly 10 digits" };
+  }
+  if (!VALID_ROLES.includes(role)) {
+    return { ok: false, status: 400, message: "Invalid role selected" };
+  }
+
+  const normalizedName = String(name).trim();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const normalizedPhone = normalizePhone10(phone);
+  const normalizedCentre = String(centre ?? "").trim() || null;
+  const normalizedDays = User.normalizeAvailableDays(availableDays);
+
+  if (!normalizedCentre) {
+    return { ok: false, status: 400, message: "Centre is required" };
+  }
+  if (!(await isValidCentre(normalizedCentre))) {
+    return { ok: false, status: 400, message: "Invalid centre selected" };
+  }
+
+  // Made before saving, so a failure here never leaves a half-added user.
+  const passwordSetupLink = createPasswordLink(normalizedName, normalizedEmail, role);
+
+  let createdUser;
+  try {
+    createdUser = await User.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      phone: normalizedPhone,
+      role,
+      centre: normalizedCentre,
+      availableDays: isMitra(role) ? normalizedDays : [],
+      ...(isMitra(role) ? { isVishist: Boolean(isVishist) } : {}),
+      password: null,
+    });
+  } catch (error) {
+    if (error.code === "DUPLICATE_EMAIL" || error.code === "DUPLICATE_PHONE") {
+      return { ok: false, status: 409, message: error.message };
+    }
+    throw error;
+  }
+
+  let emailSent = false;
+  let emailError = null;
+
+  if (normalizedEmail.endsWith(TEST_EMAIL_DOMAIN)) {
+    emailError = "Skipped welcome email for @example.com addresses";
+  } else {
+    try {
+      await sendWelcomeEmail(normalizedEmail, normalizedName, role, normalizedCentre);
+      emailSent = true;
+    } catch (err) {
+      emailError = formatEmailError(err);
+      console.error("Welcome email failed:", emailError, err);
+    }
+  }
+
+  return {
+    ok: true,
+    user: createdUser,
+    emailSent,
+    emailError,
+    passwordSetupLink: emailSent ? null : passwordSetupLink,
+  };
+};
+
 exports.addUser = wrap(
   async (req, res) => {
-    const { name, email, phone, role, centre, availableDays, isVishist } =
-      req.body;
-
-    if (!name || !email || !phone || !role) {
-      return fail(res, 400, "Name, email, phone number and role are required");
-    }
-    if (!isValidPhone10(phone)) {
-      return fail(res, 400, "Phone number must be exactly 10 digits");
-    }
-    if (!VALID_ROLES.includes(role)) {
-      return fail(res, 400, "Invalid role selected");
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPhone = normalizePhone10(phone);
-    const normalizedCentre = centre?.trim() || null;
-    const normalizedDays = User.normalizeAvailableDays(availableDays);
-
-    if (!normalizedCentre) {
-      return fail(res, 400, "Centre is required");
-    }
-    if (!(await isValidCentre(normalizedCentre))) {
-      return fail(res, 400, "Invalid centre selected");
-    }
-    let createdUser;
-    try {
-      createdUser = await User.create({
-        name: name.trim(),
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        role,
-        centre: normalizedCentre,
-        availableDays: isMitra(role) ? normalizedDays : [],
-        ...(isMitra(role) ? { isVishist: Boolean(isVishist) } : {}),
-        password: null,
-      });
-    } catch (error) {
-      if (error.code === "DUPLICATE_EMAIL" || error.code === "DUPLICATE_PHONE") {
-        return fail(res, 409, error.message);
-      }
-      throw error;
-    }
-
-    let emailSent = false;
-    let emailError = null;
-    const passwordSetupLink = createPasswordLink(name.trim(), normalizedEmail, role);
-
-    if (normalizedEmail.endsWith(TEST_EMAIL_DOMAIN)) {
-      emailError = "Skipped welcome email for @example.com addresses";
-    } else {
-      try {
-        await sendWelcomeEmail(normalizedEmail, name.trim(), role, normalizedCentre);
-        emailSent = true;
-      } catch (err) {
-        emailError = formatEmailError(err);
-        console.error("Welcome email failed:", emailError, err);
-      }
-    }
+    const result = await createUserRecord(req.body || {});
+    if (!result.ok) return fail(res, result.status, result.message);
 
     return ok(res, 201, {
-      message: emailSent
+      message: result.emailSent
         ? "User created successfully. Welcome email sent."
         : "User created successfully, but welcome email could not be sent.",
-      emailSent,
-      emailError,
-      passwordSetupLink: emailSent ? null : passwordSetupLink,
-      user: toPublicUser(createdUser),
+      emailSent: result.emailSent,
+      emailError: result.emailError,
+      passwordSetupLink: result.passwordSetupLink,
+      user: toPublicUser(result.user),
     });
   },
   { label: "Add User Error", message: "Failed to create user" }
 );
+
+/**
+ * POST /api/users/import { users: [...], defaultCentre }
+ * Adds many SATHEE MITRAs / partners from an Excel sheet and sends each an
+ * invite. Every row is checked on its own: good rows are added, bad rows are
+ * reported with the reason, and nothing stops the rest of the sheet.
+ */
+exports.importUsers = wrap(
+  async (req, res) => {
+    const rows = Array.isArray(req.body?.users) ? req.body.users : null;
+    if (!rows || !rows.length) return fail(res, 400, "No user rows were provided");
+    if (rows.length > MAX_USER_IMPORT_ROWS) {
+      return fail(
+        res,
+        400,
+        `Too many rows in one import (max ${MAX_USER_IMPORT_ROWS}). Split the sheet and try again.`
+      );
+    }
+
+    const centres = await Centre.findAll();
+    const seenEmails = new Set();
+    const seenPhones = new Set();
+    const results = [];
+    let created = 0;
+    let emailsSent = 0;
+
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i] || {};
+      const rowNo = Number(row.__row) || i + 2;
+      const email = String(row.email ?? "").trim().toLowerCase();
+      const phone = digitsOnly(row.phone);
+      const report = (fields) => results.push({ row: rowNo, name: String(row.name ?? "").trim(), email, ...fields });
+
+      const role = normalizeImportRole(row.role);
+      if (!role) {
+        report({ ok: false, message: "Role must be SATHEE MITRA or Partner" });
+        continue;
+      }
+      const centre = resolveImportCentre(row.kendra, centres, req.body?.defaultCentre);
+      if (!centre) {
+        report({
+          ok: false,
+          message: row.kendra
+            ? `Unknown Kendra "${String(row.kendra).trim()}". Use a Kendra ID like UK-DN-01.`
+            : "Kendra is required",
+        });
+        continue;
+      }
+      if (email && seenEmails.has(email)) {
+        report({ ok: false, message: "Same email appears earlier in the sheet" });
+        continue;
+      }
+      if (phone && seenPhones.has(phone)) {
+        report({ ok: false, message: "Same phone number appears earlier in the sheet" });
+        continue;
+      }
+
+      try {
+        const result = await createUserRecord({ ...row, role, centre, email, phone });
+        if (!result.ok) {
+          report({ ok: false, message: result.message });
+          continue;
+        }
+        created += 1;
+        if (result.emailSent) emailsSent += 1;
+        if (email) seenEmails.add(email);
+        if (phone) seenPhones.add(phone);
+        report({
+          ok: true,
+          role,
+          centre,
+          emailSent: result.emailSent,
+          emailError: result.emailError,
+          passwordSetupLink: result.passwordSetupLink,
+        });
+      } catch (err) {
+        console.error(`Import Users: row ${rowNo} failed`, err);
+        report({ ok: false, message: err.message || "Failed to add this row" });
+      }
+    }
+
+    return ok(res, {
+      total: results.length,
+      created,
+      failed: results.length - created,
+      emailsSent,
+      results,
+    });
+  },
+  { label: "Import Users Error", message: "Failed to import users" }
+);
+
 exports.resendInvite = wrap(
   async (req, res) => {
     const user = await User.findById(req.params.id);

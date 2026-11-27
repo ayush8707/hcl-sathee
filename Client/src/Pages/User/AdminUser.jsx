@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, GraduationCap, HeartHandshake, Plus, Shield, UsersRound } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, GraduationCap, HeartHandshake, Plus, Shield, UsersRound } from "lucide-react";
 
 import UserFilter from "../../Components/User/UserFilter";
 import UserToolbar from "../../Components/User/UserToolbar";
 import UserTable from "../../Components/User/UserTable";
 import NewUser from "../../Components/User/NewUser";
+import ImportUsersModal from "../../Components/User/ImportUsersModal";
 import { MainLayout } from "../../Components/MainLayout";
-import { createUser, fetchUsers, removeUser, resendInvite } from "../../services/users";
+import { createUser, fetchUsers, importUsers, removeUser, resendInvite } from "../../services/users";
 import { displayRole, matchesPortalCentre } from "../../utils/portalMapping";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getInitials } from "../../utils/studentMetrics";
@@ -47,6 +48,7 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
   const [userToDelete, setUserToDelete] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
   const [showNewUser, setShowNewUser] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [resendingId, setResendingId] = useState(null);
   const [notice, setNotice] = useState("");
   // Fixed per visit so "last login" labels don't change between renders.
@@ -230,14 +232,24 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowNewUser(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-          >
-            <Plus size={16} />
-            Add User
-          </button>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <FileSpreadsheet size={16} />
+              Import from Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowNewUser(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              <Plus size={16} />
+              Add User
+            </button>
+          </div>
         </div>
 
         <UserFilter
@@ -310,6 +322,17 @@ export default function AdminUser({ portalName, navItems, activeNav, onNavChange
           />
         </div>
       </div>
+
+      <ImportUsersModal
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        portalName={portalName}
+        onImport={async (rows, defaultCentre) => {
+          const result = await importUsers(rows, defaultCentre);
+          if (result.created) await loadUsers();
+          return result;
+        }}
+      />
 
       {showNewUser ? (
         <NewUser

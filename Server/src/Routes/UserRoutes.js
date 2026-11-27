@@ -5,6 +5,7 @@ const {
   getMe,
   getVishistMentors,
   addUser,
+  importUsers,
   updateUser,
   updateCurrentUser,
   deleteUser,
@@ -35,6 +36,7 @@ router.get("/vishist", getVishistMentors);
 router.get("/admins", requireAdminOrPartner, getAdminUsers);
 router.get("/", requireAdminOrPartner, getUsers);
 router.post("/", requireAdmin, addUser);
+router.post("/import", requireAdmin, importUsers);
 router.post("/:id/resend-invite", requireAdmin, resendInvite);
 router.patch("/me", updateCurrentUser);
 router.patch("/:id", requireAdmin, updateUser);

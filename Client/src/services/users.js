@@ -53,3 +53,9 @@ export const fetchAdminUsers = async () => {
 export const removeUser = async (id) => {
   await api.delete(`/api/users/${id}`);
 };
+
+/** Adds many users from an Excel sheet; see POST /api/users/import. */
+export const importUsers = async (users, defaultCentre) => {
+  const response = await api.post("/api/users/import", { users, defaultCentre });
+  return response.data;
+};
