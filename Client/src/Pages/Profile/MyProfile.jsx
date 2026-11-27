@@ -6,7 +6,7 @@ import { getApiErrorMessage } from "../../utils/apiRequest";
 import { updateSession } from "../../utils/authSession";
 import { formatAvailableDays } from "../../utils/availableDays";
 import { getInitials } from "../../utils/studentMetrics";
-import { displayRole } from "../../utils/portalMapping";
+import { displayRole, isVishistUser } from "../../utils/portalMapping";
 
 const WEEKDAYS = [
   "Monday",
@@ -124,8 +124,7 @@ export default function MyProfile({
         const currentCentre = profile?.centre || userCentre;
 
         const mentors = (users || []).filter((user) => {
-          if (String(user.role || "").toUpperCase() !== "SATHEE MITRA") return false;
-          if (user.isVishist !== true) return false;
+          if (!isVishistUser(user)) return false;
           if (currentCentre && user.centre && String(user.centre) !== String(currentCentre)) {
             return false;
           }

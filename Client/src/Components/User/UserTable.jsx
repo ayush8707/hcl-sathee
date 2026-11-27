@@ -1,4 +1,5 @@
-import { CheckCircle2, Clock, Mail, Phone, Send, Trash2, Users as UsersIcon } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Mail, Phone, Send, Trash2, Users as UsersIcon } from "lucide-react";
+import { isSatheeVishistRole } from "../../utils/portalMapping";
 
 const DEFAULT_BADGE = { bg: "bg-gray-100 text-gray-700 border border-gray-200", icon: null };
 
@@ -24,8 +25,18 @@ const formatLastLogin = (value, now) => {
   return formatDateAdded(value);
 };
 
-function StatusTag({ active }) {
-  return active ? (
+function StatusTag({ user }) {
+  // A SATHEE Vishist never logs in: show the days they visit instead.
+  if (isSatheeVishistRole(user.role)) {
+    const days = (user.availableDays || []).map((d) => String(d).slice(0, 3)).join(", ");
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200">
+        <CalendarDays size={12} />
+        {days ? `Visits ${days}` : "No login"}
+      </span>
+    );
+  }
+  return user.hasPassword ? (
     <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
       <CheckCircle2 size={12} />
       Active
@@ -64,7 +75,7 @@ function Actions({ user, onResendInvite, onDeleteUser, resendingId }) {
   const resending = resendingId === user.id;
   return (
     <div className="flex items-center justify-end gap-1">
-      {!user.hasPassword ? (
+      {!user.hasPassword && !isSatheeVishistRole(user.role) ? (
         <button
           type="button"
           onClick={() => onResendInvite(user)}
@@ -153,7 +164,7 @@ const UserTable = ({
                     <RoleTag role={user.role} roleBadge={roleBadge} formatRole={formatRole} />
                   </td>
                   <td className="px-4 py-3.5">
-                    <StatusTag active={user.hasPassword} />
+                    <StatusTag user={user} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5">
                     <p className="text-sm text-slate-700">
@@ -180,7 +191,7 @@ const UserTable = ({
                   <p className="text-sm font-semibold text-slate-900">{user.name}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     <RoleTag role={user.role} roleBadge={roleBadge} formatRole={formatRole} />
-                    <StatusTag active={user.hasPassword} />
+                    <StatusTag user={user} />
                   </div>
                   <p className="mt-2 break-all text-sm text-slate-600">{user.email}</p>
                   <p className="text-sm text-slate-500">{user.phone || "—"}</p>

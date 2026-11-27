@@ -6,7 +6,7 @@ import UtilitiesSection from "../../Components/Analytics/UtilitiesSection";
 import { MainLayout } from "../../Components/MainLayout";
 import { fetchUsers, updateUser } from "../../services/users";
 import { fetchMitraAttendance } from "../../services/mitraAttendance";
-import { matchesPortalCentre } from "../../utils/portalMapping";
+import { isVishistUser, matchesPortalCentre } from "../../utils/portalMapping";
 import { WEEKDAYS } from "../../utils/availableDays";
 
 const toInputDate = (date = new Date()) => {
@@ -52,7 +52,7 @@ const mapUserToMentor = (user, attendanceRate) => ({
   specialization: "SATHEE MITRA",
   joinDate: formatJoinDate(user.created_at),
   availableDays: Array.isArray(user.availableDays) ? user.availableDays : [],
-  isVishist: Boolean(user.isVishist),
+  isVishist: isVishistUser(user),
   role: user.role,
 });
 
@@ -128,7 +128,7 @@ export default function AdminAnalytics({
           (Array.isArray(users) ? users : [])
             .filter(
               (user) =>
-                String(user.role || "").toUpperCase() === "SATHEE MITRA" &&
+                (String(user.role || "").toUpperCase() === "SATHEE MITRA" || isVishistUser(user)) &&
                 matchesPortalCentre(user.centre, portalName)
             )
             .map((user) =>

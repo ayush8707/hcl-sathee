@@ -19,7 +19,7 @@ import { fetchAnnouncements } from "../../services/announcements";
 import { fetchUsers } from "../../services/users";
 import { fetchAttendanceDetail } from "../../services/dailySubjectAttendance";
 import { fetchCourseTestMarks } from "../../services/testMarks";
-import { getCentreValueFromPortal, matchesPortalCentre } from "../../utils/portalMapping";
+import { getCentreValueFromPortal, isVishistUser, matchesPortalCentre } from "../../utils/portalMapping";
 import {
   getCentreAddress,
   getCentreId,
@@ -701,13 +701,13 @@ export default function CentreReport({
 
         if (includeMitra) {
           mitraRows = centreUsers
-            .filter((u) => isSatheeMitraRoleUser(u) && !u.isVishist)
+            .filter((u) => isSatheeMitraRoleUser(u) && !isVishistUser(u))
             .map((user) => ({ name: user.name, email: user.email, phone: user.phone }));
         }
 
         if (includeVishist) {
           vishistRows = centreUsers
-            .filter((u) => isSatheeMitraRoleUser(u) && u.isVishist)
+            .filter((u) => isVishistUser(u))
             .map((user) => ({ name: user.name, email: user.email }));
         }
       }

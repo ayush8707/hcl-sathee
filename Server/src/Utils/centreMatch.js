@@ -67,6 +67,17 @@ const isSatheeMitraRole = (role = "") => {
   );
 };
 
+// A visiting mentor who comes about once a week. Has no login: the Kendra's
+// SATHEE MITRA records their visits.
+const isSatheeVishistRole = (role = "") => normalizeRole(role).replace(/\s/g, "") === "SATHEEVISHIST";
+
+// A SATHEE Vishist, including ones added before SATHEE VISHIST was its own role
+// (a SATHEE MITRA with is_vishist set).
+const isVishistUser = (user = {}) =>
+  isSatheeVishistRole(user.role) ||
+  (isSatheeMitraRole(user.role) &&
+    [true, "true", 1, "1"].includes(user.isVishist ?? user.is_vishist));
+
 // Kendras that are their own platform (not HCL SATHEE): SATHEE Barmer and every
 // Kendra added on the SATHEE page ("SATHEE <place>"). Mirrors isStandalonePortal
 // in Client/src/utils/portalMapping.js.
@@ -133,6 +144,8 @@ module.exports = {
   isAdminRole,
   isHclPartnerRole,
   isSatheeMitraRole,
+  isSatheeVishistRole,
+  isVishistUser,
   isPortalViewerRole,
   filterByUserCentre,
   displayRoleForCentre,

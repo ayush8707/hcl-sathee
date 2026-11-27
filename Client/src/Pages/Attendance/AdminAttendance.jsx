@@ -17,7 +17,8 @@ import { applyLeaveRequest, fetchMyLeaveRequests } from "../../services/leaveReq
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { fetchStudents } from "../../services/students";
 import api from "../../services/apiClient";
-import { matchesPortalCentre } from "../../utils/portalMapping";
+import { isVishistUser, matchesPortalCentre } from "../../utils/portalMapping";
+import VishistVisitsAdmin from "../../Components/Attendance/VishistVisitsAdmin";
 import {
   downloadAttendanceSvg,
   downloadAttendanceXlsx,
@@ -315,14 +316,16 @@ export default function AdminAttendance({
       mitras.filter(
         (user) =>
           String(user.role || "").toUpperCase() === "SATHEE MITRA" &&
+          // SATHEE Vishists (older ones were SATHEE MITRAs with a tick) don't check in.
+          !isVishistUser(user) &&
           matchesPortalCentre(user.centre, centreScope)
       ),
     [mitras, centreScope]
   );
 
   const centreVishistMitras = useMemo(
-    () => centreMitras.filter((user) => Boolean(user.isVishist)),
-    [centreMitras]
+    () => mitras.filter((user) => isVishistUser(user) && matchesPortalCentre(user.centre, centreScope)),
+    [mitras, centreScope]
   );
 
   const currentMitra = useMemo(() => {
@@ -898,6 +901,8 @@ export default function AdminAttendance({
               canApprove={!readOnly && !mitraSelfUpload}
               isCustomCentre={isCustomCentre}
             />
+          ) : isVishistView ? (
+            <VishistVisitsAdmin portalName={portalName} canApprove={!readOnly && !mitraSelfUpload} />
           ) : isVishistView && appliedType !== "daily" ? (
             <div className="px-6 py-16 text-center">
               <p className="text-sm font-medium text-gray-700">

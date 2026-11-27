@@ -4,7 +4,7 @@ import { getCentreValueFromPortal, displayRole } from "../../utils/portalMapping
 import { useEscapeToClose } from "../../hooks/useEscapeToClose";
 import { isValidPhone10, sanitizePhoneInput } from "../../utils/phone";
 
-const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function NewUser({ onClose, onAddUser, submittingUser, portalName }) {
   const defaultCentre = getCentreValueFromPortal(portalName) || "HCL RAJASTHAN";
@@ -16,9 +16,10 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
     role: "ADMIN",
     designation: "",
     centre: defaultCentre,
-    isVishist: false,
     availableDays: [],
+    subject: "",
   });
+  const isVishist = form.role === "SATHEE VISHIST";
 
   const [error, setError] = useState("");
   useEscapeToClose(onClose);
@@ -40,6 +41,11 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
       return;
     }
 
+    if (isVishist && !form.availableDays.length) {
+      setError("Choose the day(s) this SATHEE Vishist visits");
+      return;
+    }
+
     setError("");
 
     try {
@@ -51,9 +57,9 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
         designation: form.designation,
         centre: form.centre || defaultCentre,
       };
-      if (form.role === "SATHEE MITRA") {
-        payload.isVishist = Boolean(form.isVishist);
-        payload.availableDays = form.isVishist ? form.availableDays : [];
+      if (isVishist) {
+        payload.availableDays = form.availableDays;
+        payload.subject = form.subject.trim();
       }
       await onAddUser(payload);
     } catch (submitError) {
@@ -133,10 +139,7 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
                     ...prev,
                     role: e.target.value,
                     centre: prev.centre || defaultCentre,
-                    isVishist:
-                      e.target.value === "SATHEE MITRA" ? prev.isVishist : false,
-                    availableDays:
-                      e.target.value === "SATHEE MITRA" ? prev.availableDays : [],
+                    availableDays: e.target.value === "SATHEE VISHIST" ? prev.availableDays : [],
                   }))
                 }
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
@@ -144,63 +147,58 @@ export default function NewUser({ onClose, onAddUser, submittingUser, portalName
                 <option value="ADMIN">ADMIN</option>
                 <option value="SATHEE MITRA">SATHEE MITRA</option>
                 <option value="HCL PARTNER">{displayRole("HCL PARTNER", portalName)}</option>
+                <option value="SATHEE VISHIST">SATHEE VISHIST (visiting mentor)</option>
               </select>
             </div>
 
-            {form.role === "SATHEE MITRA" ? (
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer">
+            {isVishist ? (
+              <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/50 px-4 py-3">
+                <p className="text-xs text-violet-800">
+                  A SATHEE Vishist doesn&apos;t log in and gets no invite email. On their visit day the
+                  Kendra&apos;s SATHEE MITRA is asked &ldquo;Did they come?&rdquo;.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Subject they teach</label>
                   <input
-                    type="checkbox"
-                    checked={Boolean(form.isVishist)}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        isVishist: e.target.checked,
-                        availableDays: e.target.checked ? prev.availableDays : [],
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    type="text"
+                    value={form.subject}
+                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="e.g. Physics"
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    Is Vishist?
-                  </span>
-                </label>
-
-                {form.isVishist ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="mb-2 text-sm font-medium text-slate-700">Available Days</p>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                      {WEEKDAYS.map((day) => {
-                        const checked = form.availableDays.includes(day);
-                        return (
-                          <label
-                            key={day}
-                            className={`flex cursor-pointer items-center justify-center rounded-lg border px-2 py-2 text-xs font-medium transition-colors ${checked
-                              ? "border-blue-600 bg-blue-600 text-white"
-                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                              }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  availableDays: e.target.checked
-                                    ? [...prev.availableDays, day]
-                                    : prev.availableDays.filter((d) => d !== day),
-                                }))
-                              }
-                              className="hidden"
-                            />
-                            {day.slice(0, 3)}
-                          </label>
-                        );
-                      })}
-                    </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium text-slate-700">Visit day(s)</p>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                    {WEEKDAYS.map((day) => {
+                      const checked = form.availableDays.includes(day);
+                      return (
+                        <label
+                          key={day}
+                          className={`flex cursor-pointer items-center justify-center rounded-lg border px-2 py-2 text-xs font-medium transition-colors ${checked
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                            }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) =>
+                              setForm((prev) => ({
+                                ...prev,
+                                availableDays: e.target.checked
+                                  ? [...prev.availableDays, day]
+                                  : prev.availableDays.filter((d) => d !== day),
+                              }))
+                            }
+                            className="hidden"
+                          />
+                          {day.slice(0, 3)}
+                        </label>
+                      );
+                    })}
                   </div>
-                ) : null}
+                </div>
               </div>
             ) : null}
           </div>

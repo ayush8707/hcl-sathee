@@ -9,6 +9,8 @@ const {
   isAdminRole,
   isHclPartnerRole,
   isSatheeMitraRole,
+  isSatheeVishistRole,
+  isVishistUser,
 } = require("../Utils/centreMatch");
 const { digitsOnly, isValidPhone10, normalizePhone10 } = require("../Utils/phone");
 const Centre = require("../Models/Centre");
@@ -18,7 +20,7 @@ const {
   resolveImportCentre,
 } = require("../Utils/userImport");
 
-const VALID_ROLES = ["ADMIN", "SATHEE MITRA", "HCL PARTNER"];
+const VALID_ROLES = ["ADMIN", "SATHEE MITRA", "HCL PARTNER", "SATHEE VISHIST"];
 const TEST_EMAIL_DOMAIN = "@example.com";
 const isMitra = (role) => String(role).toUpperCase() === "SATHEE MITRA";
 
@@ -56,8 +58,9 @@ exports.getUsers = wrap(
     if (isAdminRole(req.user?.role)) {
       users = users;
     } else if (isHclPartnerRole(req.user?.role) || isSatheeMitraRole(req.user?.role)) {
-      users = filterByUserCentre(users, req.user).filter((user) =>
-        isMitra(user.role)
+      // Their own Kendra's SATHEE MITRAs and SATHEE Vishists.
+      users = filterByUserCentre(users, req.user).filter(
+        (user) => isMitra(user.role) || isSatheeVishistRole(user.role)
       );
     } else {
       users = [];
@@ -94,13 +97,11 @@ exports.getMe = wrap(
 
 exports.getVishistMentors = wrap(
   async (req, res) => {
-    const allUsers = await User.findAll();
+    const allUsers = await User.findVishists();
     const isAdmin = isAdminRole(req.user?.role);
     const centre = isAdmin ? req.query.centre || null : req.user?.centre;
 
-    let mentors = allUsers.filter(
-      (u) => isSatheeMitraRole(u.role) && Boolean(u.isVishist)
-    );
+    let mentors = allUsers.filter(isVishistUser);
     if (centre) {
       mentors = mentors.filter((u) => matchesCentre(u.centre, centre));
     }
@@ -112,6 +113,7 @@ exports.getVishistMentors = wrap(
         email: u.email,
         centre: u.centre,
         availableDays: u.availableDays || [],
+        subject: u.subject || null,
       })),
     });
   },
@@ -146,7 +148,7 @@ exports.removePushSubscription = wrap(
  * { ok: true, user, emailSent, emailError, passwordSetupLink } or
  * { ok: false, status, message }.
  */
-const createUserRecord = async ({ name, email, phone, role, centre, availableDays, isVishist }) => {
+const createUserRecord = async ({ name, email, phone, role, centre, availableDays, isVishist, subject }) => {
   if (!name || !email || !phone || !role) {
     return { ok: false, status: 400, message: "Name, email, phone number and role are required" };
   }
@@ -169,6 +171,10 @@ const createUserRecord = async ({ name, email, phone, role, centre, availableDay
   if (!(await isValidCentre(normalizedCentre))) {
     return { ok: false, status: 400, message: "Invalid centre selected" };
   }
+  const vishist = isSatheeVishistRole(role);
+  if (vishist && !normalizedDays.length) {
+    return { ok: false, status: 400, message: "Choose the day(s) this SATHEE Vishist visits" };
+  }
 
   // Made before saving, so a failure here never leaves a half-added user.
   const passwordSetupLink = createPasswordLink(normalizedName, normalizedEmail, role);
@@ -181,8 +187,9 @@ const createUserRecord = async ({ name, email, phone, role, centre, availableDay
       phone: normalizedPhone,
       role,
       centre: normalizedCentre,
-      availableDays: isMitra(role) ? normalizedDays : [],
+      availableDays: isMitra(role) || vishist ? normalizedDays : [],
       ...(isMitra(role) ? { isVishist: Boolean(isVishist) } : {}),
+      ...(vishist ? { subject } : {}),
       password: null,
     });
   } catch (error) {
@@ -190,6 +197,12 @@ const createUserRecord = async ({ name, email, phone, role, centre, availableDay
       return { ok: false, status: 409, message: error.message };
     }
     throw error;
+  }
+
+  // A SATHEE Vishist never logs in (the SATHEE MITRA records their visits),
+  // so they get no invite email or set-password link.
+  if (vishist) {
+    return { ok: true, user: createdUser, emailSent: false, emailError: null, passwordSetupLink: null, noLogin: true };
   }
 
   let emailSent = false;
@@ -222,7 +235,9 @@ exports.addUser = wrap(
     if (!result.ok) return fail(res, result.status, result.message);
 
     return ok(res, 201, {
-      message: result.emailSent
+      message: result.noLogin
+        ? "SATHEE Vishist added. They don't log in; the SATHEE MITRA records their visits."
+        : result.emailSent
         ? "User created successfully. Welcome email sent."
         : "User created successfully, but welcome email could not be sent.",
       emailSent: result.emailSent,
@@ -329,6 +344,9 @@ exports.resendInvite = wrap(
   async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return fail(res, 404, "User not found");
+    if (isSatheeVishistRole(user.role)) {
+      return fail(res, 400, "SATHEE Vishists don't log in, so there is no invite to send");
+    }
     if (user.password) {
       return fail(res, 400, "This user has already set their password");
     }
@@ -419,7 +437,7 @@ exports.updateCurrentUser = wrap(
 
 exports.updateUser = wrap(
   async (req, res) => {
-    const { availableDays, name, phone, centre, isVishist } = req.body;
+    const { availableDays, name, phone, centre, isVishist, subject } = req.body;
     const existing = await User.findById(req.params.id);
 
     if (!existing) {
@@ -443,6 +461,12 @@ exports.updateUser = wrap(
     }
     if (availableDays != null) {
       patch.availableDays = User.normalizeAvailableDays(availableDays);
+      if (isSatheeVishistRole(existing.role) && !patch.availableDays.length) {
+        return fail(res, 400, "Choose the day(s) this SATHEE Vishist visits");
+      }
+    }
+    if (subject !== undefined && isSatheeVishistRole(existing.role)) {
+      patch.subject = String(subject ?? "").trim();
     }
     if (isVishist != null) {
       if (isMitra(existing.role)) {

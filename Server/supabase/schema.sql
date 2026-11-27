@@ -37,7 +37,7 @@ create table if not exists users (
   password           text,
   role               text not null,
   centre             text,
-  is_vishist         boolean,               -- null for non-Mitra roles; true/false for SATHEE MITRA
+  is_vishist         boolean,               -- legacy: SATHEE VISHIST is now its own role
   available_days     text[] not null default '{}',
   push_subscriptions jsonb not null default '[]'::jsonb, -- Web Push subscription objects, not FCM tokens
   otp_hash           text,
@@ -49,6 +49,8 @@ create table if not exists users (
 );
 -- Added after the first release; safe to re-run on an existing database.
 alter table users add column if not exists last_login_at timestamptz;
+-- SATHEE VISHIST: the subject they teach (sathee_vishist.sql).
+alter table users add column if not exists subject text;
 create index if not exists idx_users_centre on users (centre);
 create index if not exists idx_users_role on users (role);
 
@@ -223,7 +225,7 @@ create table if not exists vishist_attendances (
   marked_by_user_id bigint,
   marked_by_name    text,
   date              date not null,
-  status            text not null default 'pending',
+  status            text not null default 'pending', -- pending | approved | absent (didn't come)
   approved_by_user_id bigint,
   approved_at       timestamptz,
   created_at        timestamptz not null default now()
