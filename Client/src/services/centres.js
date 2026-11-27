@@ -24,9 +24,3 @@ export const renameCentre = async (id, name) => {
 export const deleteCentre = async (id) => {
   await api.delete(`/api/centres/${id}`);
 };
-
-// Admin-only: every Kendra side by side (headcounts, attendance, approvals).
-export const fetchNetworkSummary = async () => {
-  const response = await api.get("/api/centres/network-summary");
-  return response.data;
-};

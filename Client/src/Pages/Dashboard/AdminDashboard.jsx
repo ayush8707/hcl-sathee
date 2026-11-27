@@ -11,7 +11,6 @@ import { ExamProgress } from "../../Components/Dashboard/ExamProgress";
 import { StatTiles } from "../../Components/Dashboard/StatTiles";
 import { LowAttendanceCard } from "../../Components/Dashboard/LowAttendanceCard";
 import { PendingMitraApprovals } from "../../Components/Dashboard/PendingMitraApprovals";
-import { NetworkSummary } from "../../Components/Dashboard/NetworkSummary";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
 import { fetchLeaveRequests } from "../../services/leaveRequests";
@@ -176,9 +175,6 @@ export default function AdminDashboard({
           onViewStudents={() => onNavChange(studentsNavIndex)}
           onViewAttendance={() => onNavChange(attendanceNavIndex)}
         />
-
-        {/* Admins only: every Kendra on every platform, not just this one. */}
-        {isAdmin ? <NetworkSummary /> : null}
 
         {statsError && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
