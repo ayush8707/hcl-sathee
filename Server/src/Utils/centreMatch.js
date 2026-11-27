@@ -74,8 +74,15 @@ const STANDALONE_PLATFORM_NAMES = { SATHEEBARMER: "SATHEE Barmer" };
 const isStandaloneCentre = (centre = "") =>
   getCanonicalCentreKey(centre ?? "").startsWith("SATHEE");
 
-// "SATHEE KOTA" -> "SATHEE Kota"
+// "SATHEE KOTA" -> "SATHEE Kota"; listed Kendras use their own label
+// ("SATHEE ERODE III" -> "SATHEE Erode 3"). Required lazily: that list's
+// module loads after this one.
 const satheeKendraName = (centre = "") =>
+  ((label) => (label ? `SATHEE ${label}` : null))(
+    require("./satheeKendras").SATHEE_KENDRAS.find(
+      (k) => getCanonicalCentreKey(k.name) === getCanonicalCentreKey(centre)
+    )?.label
+  ) ||
   "SATHEE " +
   String(centre ?? "")
     .trim()

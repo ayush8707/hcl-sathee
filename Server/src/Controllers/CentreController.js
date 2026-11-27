@@ -1,5 +1,6 @@
 const Centre = require("../Models/Centre");
-const { getSupabase, assertNoError } = require("../config/supabase");
+const { getSupabase, assertNoError, selectAllRows } = require("../config/supabase");
+const { ATTENDANCE_DAYS, buildNetworkSummary, indiaDate } = require("../Utils/networkSummary");
 const { fail, ok, wrap } = require("../Utils/httpResponse");
 const {
   getCanonicalCentreKey,
@@ -28,20 +29,24 @@ const isVishistUser = (user) => {
 exports.getCentresOverview = wrap(
   async (_req, res) => {
     const supabase = getSupabase();
-    const [centres, usersRes, studentsRes] = await Promise.all([
+    // Paged: a single request stops at 1000 rows, which would undercount.
+    const [centres, userRows, students] = await Promise.all([
       Centre.findAll(),
-      supabase.from("users").select("role, centre, is_vishist"),
-      supabase.from("students").select("centre"),
+      selectAllRows(
+        () => supabase.from("users").select("id, role, centre, is_vishist"),
+        "Failed to load users for centres overview"
+      ),
+      selectAllRows(
+        () => supabase.from("students").select("id, centre"),
+        "Failed to load students for centres overview"
+      ),
     ]);
-    assertNoError(usersRes.error, "Failed to load users for centres overview");
-    assertNoError(studentsRes.error, "Failed to load students for centres overview");
 
-    const users = (usersRes.data || []).map((row) => ({
+    const users = userRows.map((row) => ({
       role: row.role,
       centre: row.centre,
       isVishist: row.is_vishist,
     }));
-    const students = studentsRes.data || [];
 
     const overview = centres.map((centre) => {
       const key = getCanonicalCentreKey(centre.name);
@@ -105,4 +110,37 @@ exports.deleteCentre = wrap(
     }
   },
   { label: "Delete Centre Error", message: "Failed to delete centre" }
+);
+
+/**
+ * GET /api/centres/network-summary (admins): every Kendra side by side for
+ * the admin dashboard: headcounts, student attendance over the last
+ * ATTENDANCE_DAYS days, SATHEE MITRA check-ins today and approvals waiting.
+ */
+exports.getNetworkSummary = wrap(
+  async (_req, res) => {
+    const supabase = getSupabase();
+    const now = new Date();
+    const since = indiaDate(now, ATTENDANCE_DAYS - 1);
+    const [centres, users, students, attendance, mitraDays] = await Promise.all([
+      Centre.findAll(),
+      selectAllRows(() => supabase.from("users").select("id, role, centre"), "Failed to load users"),
+      selectAllRows(() => supabase.from("students").select("id, centre"), "Failed to load students"),
+      selectAllRows(
+        () => supabase.from("daily_subject_attendances").select("id, centre, status").gte("date", since),
+        "Failed to load student attendance"
+      ),
+      // Yesterday too: a day checked out late yesterday can still be approved today.
+      selectAllRows(
+        () =>
+          supabase
+            .from("mitra_attendances")
+            .select("id, centre, date, arrival_time, departure_time, approved")
+            .gte("date", indiaDate(now, 1)),
+        "Failed to load SATHEE MITRA attendance"
+      ),
+    ]);
+    return ok(res, buildNetworkSummary({ centres, users, students, attendance, mitraDays, now }));
+  },
+  { label: "Network Summary Error", message: "Failed to load the network summary" }
 );

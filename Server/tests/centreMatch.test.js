@@ -46,3 +46,7 @@ assert.strictEqual(getStudentIdPrefix("SATHEE DEHRADUN"), "UK-DN");
 assert.strictEqual(getStudentIdPrefix("SATHEE ERODE I"), "TN-EE-01");
 assert.strictEqual(getStudentIdPrefix("SATHEE ERODE V"), "TN-EE-05");
 console.log("kendra id tests passed");
+assert.strictEqual(c.platformNameForCentre("SATHEE ERODE III"), "SATHEE Erode 3");
+assert.strictEqual(c.platformNameForCentre("SATHEE UDHAM SINGH NAGAR"), "SATHEE Udham Singh Nagar");
+assert.strictEqual(c.platformNameForCentre("SATHEE KOTA"), "SATHEE Kota");
+console.log("platform name tests passed");
