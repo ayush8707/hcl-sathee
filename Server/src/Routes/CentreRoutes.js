@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getCentres,
   getCentresOverview,
+  getNetworkSummary,
   createCentre,
   updateCentre,
   deleteCentre,
@@ -14,6 +15,8 @@ const router = express.Router();
 router.get("/", authenticate, getCentres);
 // Admin-only: per-centre headcounts for the "Other Centres" page.
 router.get("/overview", authenticate, requireAdmin, getCentresOverview);
+// Admin-only: every Kendra side by side for the dashboard's Network summary.
+router.get("/network-summary", authenticate, requireAdmin, getNetworkSummary);
 // Only admins can add a new centre.
 router.post("/", authenticate, requireAdmin, createCentre);
 // Only admins can rename or delete a custom centre (defaults are locked in the model).
