@@ -7,6 +7,7 @@ import {
 } from "../../services/dailySubjectAttendance";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { getTodaysClasses } from "../../utils/todayClasses";
+import { classSubjectFor } from "../../utils/combinedBatches";
 
 const toInputDate = (date = new Date()) => {
   const year = date.getFullYear();
@@ -43,32 +44,18 @@ const normalizeSearch = (value = "") =>
 const studentDisplayId = (student) =>
   student?.studentId || student?.enrollmentNo || student?.Student_ID || student?.id || "—";
 
-const studentSubjects = (student) => {
-  if (Array.isArray(student?.subjects) && student.subjects.length) {
-    return student.subjects;
-  }
-  return Object.keys(student?.attendance || {});
-};
-
-const studentMatchesClass = (student, classItem) => {
-  const subject = normalizeSubject(classItem.subject);
-  if (!subject) return false;
-
-  const enrolled = studentSubjects(student).some(
-    (item) => normalizeSubject(item) === subject
-  );
-  if (!enrolled) return false;
-
-  if (!classItem.course) return true;
-  return (
-    normalizeCourseKey(student.course) === normalizeCourseKey(classItem.course)
-  );
-};
-
 const classHeading = (classItem, students = []) => {
   const explicit = String(classItem.course || "").trim();
   if (explicit) {
-    return `${classItem.subject} (${explicit})`;
+    // Combined batch: "Quantitative Aptitude (SSC + IBPS + RRB)".
+    const joining = [
+      ...new Set(
+        students
+          .map((s) => normalizeCourseKey(s.course))
+          .filter((c) => c && c !== normalizeCourseKey(explicit))
+      ),
+    ].sort();
+    return `${classItem.subject} (${[explicit, ...joining].join(" + ")})`;
   }
 
   // Timetable slot has no course — show the course(s) the matched students
@@ -113,12 +100,16 @@ function ClassAttendanceTable({
     setLoading(true);
     setError("");
     try {
-      const records = await fetchDailySubjectAttendance({
-        date,
-        subject: classItem.subject,
-        time: classItem.time || "",
-        centre: centre || "",
-      });
+      // Students from a joining course (e.g. RRB) are saved under their own
+      // subject name, so read every subject this class covers.
+      const subjects = [...new Set([classItem.subject, ...students.map((s) => s.classSubject).filter(Boolean)])];
+      const records = (
+        await Promise.all(
+          subjects.map((subject) =>
+            fetchDailySubjectAttendance({ date, subject, time: classItem.time || "", centre: centre || "" })
+          )
+        )
+      ).flat();
       const next = {};
       for (const row of records) {
         const id = String(row.studentId);
@@ -150,7 +141,7 @@ function ClassAttendanceTable({
     centre,
     date,
     students.length,
-    students.map((student) => student.id).join(","),
+    students.map((student) => `${student.id}:${student.classSubject || ""}`).join(","),
   ]);
 
   useEffect(() => {
@@ -204,6 +195,10 @@ function ClassAttendanceTable({
           studentId: student.id,
           name: student.name,
           status,
+          // e.g. an RRB student in SSC "Quantitative Aptitude" -> "Mathematics".
+          ...(student.classSubject && student.classSubject !== classItem.subject
+            ? { subject: student.classSubject }
+            : {}),
         };
       })
       .filter(Boolean);
@@ -381,6 +376,12 @@ function ClassAttendanceTable({
                     </td>
                     <td className="px-5 py-3.5 text-sm font-medium text-gray-800">
                       {student.name || "—"}
+                      {classItem.course &&
+                      normalizeCourseKey(student.course) !== normalizeCourseKey(classItem.course) ? (
+                        <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
+                          {normalizeCourseKey(student.course)}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-5 py-3.5 text-sm text-gray-600">
                       {student.gender || "—"}
@@ -675,8 +676,10 @@ export default function ClassSubjectAttendanceTables({
         </div>
       ) : (
         filteredClasses.map((classItem, index) => {
+          // Includes IBPS / RRB students who sit SSC classes (see combinedBatches).
           const matched = students
-            .filter((student) => studentMatchesClass(student, classItem))
+            .map((student) => ({ ...student, classSubject: classSubjectFor(student, classItem) }))
+            .filter((student) => student.classSubject)
             .sort((a, b) =>
               String(a.name || "").localeCompare(String(b.name || ""), undefined, {
                 sensitivity: "base",

@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node tests/centreMatch.test.js && node tests/vishistVisits.test.js && node tests/vishistEndpoints.test.js && node tests/userImport.test.js && node tests/mitraAttendance.test.js && node tests/supportQueries.test.js && node tests/sendEmail.test.js",
+    "test": "node tests/centreMatch.test.js && node tests/combinedBatch.test.js && node tests/vishistVisits.test.js && node tests/vishistEndpoints.test.js && node tests/userImport.test.js && node tests/mitraAttendance.test.js && node tests/supportQueries.test.js && node tests/sendEmail.test.js",
     "dev": "nodemon src/index.js"
   },
   "keywords": [],
