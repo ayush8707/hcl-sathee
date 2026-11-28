@@ -117,14 +117,22 @@ function ClassAttendanceTable({
           next[id] = row.status;
         }
       }
-      setStatusById(next);
-
       const allMarked =
         students.length > 0 &&
         students.every((student) => {
           const status = next[String(student.id)];
           return status === "present" || status === "absent";
         });
+
+      // Not saved yet: everyone starts as Present, so the SATHEE MITRA only
+      // taps the students who are absent.
+      if (!allMarked) {
+        for (const student of students) {
+          const id = String(student.id);
+          if (next[id] !== "present" && next[id] !== "absent") next[id] = "present";
+        }
+      }
+      setStatusById(next);
       setLocked((prev) => prev || allMarked);
       if (allMarked) {
         setMessage((prev) => prev || "Attendance already saved for this class.");
@@ -574,7 +582,8 @@ export default function ClassSubjectAttendanceTables({
       <div>
         <h2 className="text-lg font-semibold text-slate-900">Mark Class Attendance</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Mark Present / Absent for every student, then Save once. After saving, the table is locked.
+          Everyone starts as Present. Tap A for the students who are absent, then Save once. After saving, the
+          table is locked.
         </p>
       </div>
 
@@ -678,7 +687,7 @@ export default function ClassSubjectAttendanceTables({
         filteredClasses.map((classItem, index) => {
           // Includes IBPS / RRB students who sit SSC classes (see combinedBatches).
           const matched = students
-            .map((student) => ({ ...student, classSubject: classSubjectFor(student, classItem) }))
+            .map((student) => ({ ...student, classSubject: classSubjectFor(student, classItem, classes) }))
             .filter((student) => student.classSubject)
             .sort((a, b) =>
               String(a.name || "").localeCompare(String(b.name || ""), undefined, {

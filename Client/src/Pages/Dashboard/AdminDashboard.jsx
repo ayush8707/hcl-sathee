@@ -12,6 +12,7 @@ import { StatTiles } from "../../Components/Dashboard/StatTiles";
 import { LowAttendanceCard } from "../../Components/Dashboard/LowAttendanceCard";
 import { PendingMitraApprovals } from "../../Components/Dashboard/PendingMitraApprovals";
 import { VishistDueCard } from "../../Components/Attendance/VishistDueCard";
+import { UnmarkedClassesCard } from "../../Components/Dashboard/UnmarkedClassesCard";
 import { fetchStudentPerformance } from "../../services/studentPerformance";
 import { fetchAttendanceSummary } from "../../services/dailySubjectAttendance";
 import { fetchLeaveRequests } from "../../services/leaveRequests";
@@ -153,6 +154,16 @@ export default function AdminDashboard({
 
         {/* SATHEE MITRA: "Did the SATHEE Vishist come?" on visit days. */}
         {variant === "mitra" && !isCustomCentre ? <VishistDueCard portalName={portalName} /> : null}
+
+        {/* SATHEE MITRA: today's timetable classes with no attendance saved yet. */}
+        {variant === "mitra" && !isCustomCentre ? (
+          <UnmarkedClassesCard
+            portalName={portalName}
+            students={stats.centreStudents}
+            loadingStudents={loadingStats}
+            onMarkNow={() => onNavChange(attendanceNavIndex)}
+          />
+        ) : null}
 
         {isAdmin && !isCustomCentre ? (
           <PendingMitraApprovals portalName={portalName} onReview={() => onNavChange(attendanceNavIndex)} />
