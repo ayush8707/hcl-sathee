@@ -1,36 +1,36 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, } from "react-router-dom";
 import { LayoutDashboard, CalendarDays, TrendingUp, Users, IdCard, Megaphone, UserCircle, MessageSquareText, ClipboardList, FileBarChart2 } from "lucide-react";
 
 import Authentication from "./Pages/Auth/Authentication";
-import CreatePassword from "./Components/Auth/CreatePassword";
-import ForgetPassword from "./Components/Auth/ForgetPassword";
-import LegalPage from "./Pages/Legal/LegalPage";
-import CardSelector_1 from "./Pages/Selector/CardSelector_1";
-import CardSelector_2 from "./Pages/Selector/CardSelector_2";
-import OtherCentres from "./Pages/Selector/OtherCentres";
-import Dashboard from "./Pages/Dashboard/AdminDashboard";
-import HCLPartnerDashboard from "./Pages/Dashboard/HCLPartnerDashboard";
-import SatheeMitraDashboard from "./Pages/Dashboard/SatheeMitraDashboard";
-import AdminAttendance from "./Pages/Attendance/AdminAttendance";
-import HCLPartnerAttendance from "./Pages/Attendance/HCLPartnerAttendance";
-import SM_Attendance from "./Pages/Attendance/SM_Attendance";
-import AdminUser from "./Pages/User/AdminUser";
-import Student from "./Pages/Student/Student";
-import PartnerStudents from "./Pages/Student/View";
-import SM_Student from "./Pages/Student/SM_Student";
-import AdminAnnouncements from "./Pages/Announcements/AdminAnnouncements";
-import HCLPartnerAnnouncements from "./Pages/Announcements/HCLPartnerAnnouncements";
-import SatheeMitraAnnouncements from "./Pages/Announcements/SatheeMitraAnnouncements";
-import AdminAnalytics from "./Pages/Analytics/AdminAnalytics";
-import HCLPartnerAnalytics from "./Pages/Analytics/HCLPartnerAnalytics";
-import SM_Analytics from "./Pages/Analytics/SM_Analytics";
-import MyProfile from "./Pages/Profile/MyProfile";
-import AdminLeaveRequests from "./Pages/Attendance/AdminLeaveRequests";
-import QueryAndSupport from "./Pages/Support/QueryAndSupport";
-import AdminQueries from "./Pages/Support/AdminQueries";
-import SM_TestMarks from "./Pages/TestMarks/SM_TestMarks";
-import CentreReport from "./Pages/Report/CentreReport";
+const CreatePassword = lazy(() => import("./Components/Auth/CreatePassword"));
+const ForgetPassword = lazy(() => import("./Components/Auth/ForgetPassword"));
+const LegalPage = lazy(() => import("./Pages/Legal/LegalPage"));
+const CardSelector_1 = lazy(() => import("./Pages/Selector/CardSelector_1"));
+const CardSelector_2 = lazy(() => import("./Pages/Selector/CardSelector_2"));
+const OtherCentres = lazy(() => import("./Pages/Selector/OtherCentres"));
+const Dashboard = lazy(() => import("./Pages/Dashboard/AdminDashboard"));
+const HCLPartnerDashboard = lazy(() => import("./Pages/Dashboard/HCLPartnerDashboard"));
+const SatheeMitraDashboard = lazy(() => import("./Pages/Dashboard/SatheeMitraDashboard"));
+const AdminAttendance = lazy(() => import("./Pages/Attendance/AdminAttendance"));
+const HCLPartnerAttendance = lazy(() => import("./Pages/Attendance/HCLPartnerAttendance"));
+const SM_Attendance = lazy(() => import("./Pages/Attendance/SM_Attendance"));
+const AdminUser = lazy(() => import("./Pages/User/AdminUser"));
+const Student = lazy(() => import("./Pages/Student/Student"));
+const PartnerStudents = lazy(() => import("./Pages/Student/View"));
+const SM_Student = lazy(() => import("./Pages/Student/SM_Student"));
+const AdminAnnouncements = lazy(() => import("./Pages/Announcements/AdminAnnouncements"));
+const HCLPartnerAnnouncements = lazy(() => import("./Pages/Announcements/HCLPartnerAnnouncements"));
+const SatheeMitraAnnouncements = lazy(() => import("./Pages/Announcements/SatheeMitraAnnouncements"));
+const AdminAnalytics = lazy(() => import("./Pages/Analytics/AdminAnalytics"));
+const HCLPartnerAnalytics = lazy(() => import("./Pages/Analytics/HCLPartnerAnalytics"));
+const SM_Analytics = lazy(() => import("./Pages/Analytics/SM_Analytics"));
+const MyProfile = lazy(() => import("./Pages/Profile/MyProfile"));
+const AdminLeaveRequests = lazy(() => import("./Pages/Attendance/AdminLeaveRequests"));
+const QueryAndSupport = lazy(() => import("./Pages/Support/QueryAndSupport"));
+const AdminQueries = lazy(() => import("./Pages/Support/AdminQueries"));
+const SM_TestMarks = lazy(() => import("./Pages/TestMarks/SM_TestMarks"));
+const CentreReport = lazy(() => import("./Pages/Report/CentreReport"));
 import {
   canAccessPortal,
   canOpenPlatform,
@@ -564,9 +564,25 @@ const AppContent = () => {
   );
 };
 
+// Each page is downloaded only when it is first opened, so the login screen
+// appears quickly even on slow mobile data (the whole site used to be one
+// ~650 KB download before anything showed).
+function PageLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#F1F5F9]" role="status">
+      <div className="flex flex-col items-center gap-3 text-slate-500">
+        <span className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+        <span className="text-sm font-medium">Loading…</span>
+      </div>
+    </div>
+  );
+}
+
 const App = () => (
   <BrowserRouter>
-    <AppContent />
+    <Suspense fallback={<PageLoading />}>
+      <AppContent />
+    </Suspense>
   </BrowserRouter>
 );
 

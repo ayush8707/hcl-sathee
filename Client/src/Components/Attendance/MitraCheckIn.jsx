@@ -4,6 +4,7 @@ import { uploadMitraAttendancePhoto } from "../../services/mitraAttendance";
 import { getApiErrorMessage } from "../../utils/apiRequest";
 import { compressImageForUpload } from "../../utils/compressImage";
 import { getBestPosition, getCurrentPosition } from "../../utils/geolocation";
+import SelfieCamera from "./SelfieCamera";
 
 const formatTime = (value) =>
   value ? new Date(value).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true }) : "—";
@@ -11,8 +12,9 @@ const formatTime = (value) =>
 /**
  * The SATHEE MITRA's own check-in, made as simple as possible:
  *  1. one big button (Check in, later Check out);
- *  2. it opens the phone's own camera app (works on every phone and inside
- *     WhatsApp's browser, unlike an in-page camera);
+ *  2. it opens a selfie camera inside the app (no switching to the camera app,
+ *     which low-memory phones answer by closing the installed app), with
+ *     the phone's own camera app as a backup;
  *  3. the selfie saves straight away with time and location;
  *  4. if anything fails the photo is kept, so "Try again" doesn't need a new one.
  */
@@ -22,6 +24,7 @@ export default function MitraCheckIn({ profile, date, record, onSaved }) {
   const [step, setStep] = useState(""); // "" | "locating" | "saving"
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const next = !record?.arrivalTime ? "arrival" : !record?.departureTime ? "departure" : null;
   const isArrival = next === "arrival";
@@ -74,19 +77,26 @@ export default function MitraCheckIn({ profile, date, record, onSaved }) {
     }
   };
 
-  const onPhoto = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const takePhoto = (file) => {
     if (!file || !next) return;
     const item = { type: next, file, url: URL.createObjectURL(file) };
     setPending(item);
     send(item);
   };
 
+  const onPhoto = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    takePhoto(file);
+  };
+
+  // The phone's own camera app: the backup when the in-app camera can't start.
+  const openPhoneCamera = () => fileRef.current?.click();
+
   const openCamera = () => {
     setError("");
     setDone("");
-    fileRef.current?.click();
+    setCameraOpen(true);
   };
 
   if (!next && !pending) {
@@ -112,6 +122,13 @@ export default function MitraCheckIn({ profile, date, record, onSaved }) {
   return (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-b from-blue-50 to-white p-5 text-center sm:p-6">
       <input ref={fileRef} type="file" accept="image/*" capture="user" className="hidden" onChange={onPhoto} />
+      <SelfieCamera
+        open={cameraOpen}
+        title={isArrival ? "Check-in selfie" : "Check-out selfie"}
+        onPhoto={takePhoto}
+        onClose={() => setCameraOpen(false)}
+        onUsePhoneCamera={openPhoneCamera}
+      />
 
       <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">
         {isArrival ? "Step 1 of 2" : "Step 2 of 2"}
