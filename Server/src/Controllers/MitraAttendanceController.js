@@ -62,8 +62,8 @@ exports.uploadMitraPhoto = wrap(
         res,
         400,
         fence.reason === "no-location"
-          ? "Turn on location for this website and try again. Check-in needs your location."
-          : `You are about ${fence.distanceM} m from the Kendra. Check-in only works within ${fence.radiusM} m of it.`
+          ? "Your location is needed to check in. Turn on Location (GPS) on your phone, allow it for this website, then tap Try again."
+          : `You seem to be about ${fence.distanceM} m from the Kendra (check-in works within ${fence.radiusM} m). If you are at the Kendra, step outside or near a window for a few seconds so GPS can find you, then tap Try again.`
       );
     }
 
