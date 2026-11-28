@@ -353,6 +353,11 @@ exports.saveDailySubjectAttendance = wrap(
         continue;
       }
 
+      // In a combined batch (IBPS / RRB students sitting the SSC class) a row
+      // names the student's own subject, e.g. RRB "Mathematics" for SSC
+      // "Quantitative Aptitude", so their reports stay under their subjects.
+      const rowSubject = String(row.subject || "").trim() || subjectName;
+
       const enrolled =
         Array.isArray(student.subjects) && student.subjects.length
           ? student.subjects.map((s) => String(s).trim().toLowerCase())
@@ -360,11 +365,11 @@ exports.saveDailySubjectAttendance = wrap(
 
       if (
         enrolled.length > 0 &&
-        !enrolled.includes(subjectName.toLowerCase())
+        !enrolled.includes(rowSubject.toLowerCase())
       ) {
         errors.push({
           studentId,
-          message: `Student is not enrolled in subject ${subjectName}`,
+          message: `Student is not enrolled in subject ${rowSubject}`,
         });
         continue;
       }
@@ -374,8 +379,12 @@ exports.saveDailySubjectAttendance = wrap(
           studentId: student.id,
           name: row.name || student.name,
           centre: centre || student.centre,
-          course: course || student.course,
-          subject: subjectName,
+          // A student from another course sitting this class keeps their own course.
+          course:
+            course && normalizeCourseCode(course) !== normalizeCourseCode(student.course)
+              ? student.course || course
+              : course || student.course,
+          subject: rowSubject,
           topic: topicText,
           date: dateOnly,
           time: timeKey,
@@ -383,9 +392,9 @@ exports.saveDailySubjectAttendance = wrap(
           ...photoFields,
         });
         saved.push(log);
-        touchedPairs.set(`${student.id}::${subjectName}`, {
+        touchedPairs.set(`${student.id}::${rowSubject}`, {
           studentId: student.id,
-          subject: subjectName,
+          subject: rowSubject,
         });
       } catch (error) {
         errors.push({
